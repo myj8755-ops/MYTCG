@@ -213,15 +213,23 @@
   #cardTable tbody tr.sortable-chosen td { background: #eff6ff; }
   #cardTable tbody tr.active-row { background: #eff6ff; }
   #cardTable tbody tr.active-row:hover { background: #eff6ff; }
-  .card-detail {
-    display: none;
-    border: 1px solid #bfdbfe;
-    border-radius: 10px;
-    padding: 16px 18px;
+  #cardTable tbody tr.detail-row { cursor: default; }
+  #cardTable tbody tr.detail-row:hover { background: #f0f7ff; }
+  #cardTable tbody tr.detail-row td {
+    white-space: normal;
     background: #f0f7ff;
-    margin-top: 10px;
+    padding: 16px 18px;
+    border-bottom: 2px solid #bfdbfe;
+    cursor: default;
   }
-  .detail-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .detail-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    max-width: min(640px, 88vw);
+  }
   .detail-head b { font-size: 15px; }
   .detail-close {
     margin-left: auto;
@@ -234,7 +242,7 @@
     line-height: 1;
   }
   .detail-close:hover { color: #111827; }
-  .detail-grid { display: grid; gap: 12px; }
+  .detail-grid { display: grid; gap: 12px; max-width: min(640px, 88vw); }
   .detail-item .dt-label {
     font-size: 11px;
     font-weight: 700;
@@ -336,7 +344,6 @@
   <tbody></tbody>
 </table>
 </div>
-<div class="card-detail" id="cardDetail"></div>
 
 <details class="add-toggle">
 <summary><h2 style="display:inline">➕ 카드 추가</h2></summary>
@@ -441,6 +448,39 @@ let sortKey = null, sortAsc = true;
 let reorderMode = false;
 let expandedName = null;
 
+function detailRowHtml(name) {
+  const d = data[name];
+  if (!d) return "";
+  const info = d.info || {};
+  const pop = typeof d.psa10Pop === "number" ? d.psa10Pop.toLocaleString("ko-KR") + "장" : "정보 없음";
+  const items = [
+    ["PSA10 POP", pop],
+    ["획득 경로", info.acquired || "정보 없음"],
+    ["카드 특징", info.features || "정보 없음"],
+    ["카드 평가", info.comment || "정보 없음"],
+    ["5년 후 가치 예상", info.forecast || "정보 없음"],
+  ];
+  return `
+    <tr class="detail-row" data-detail-for="${name}">
+      <td colspan="9">
+        <div class="detail-head">
+          <b>${name}</b>
+          <span class="grade-tag" style="margin-top:0">${d.grade}</span>
+          <button class="detail-close" data-close-detail aria-label="닫기">✕ 닫기</button>
+        </div>
+        <div class="detail-grid">
+          ${items.map(([label, value]) => `
+            <div class="detail-item">
+              <div class="dt-label">${label}</div>
+              <div class="dt-value">${value}</div>
+            </div>
+          `).join("")}
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
 function renderTable() {
   const tbody = document.querySelector("#cardTable tbody");
   let list = [...rows];
@@ -452,8 +492,9 @@ function renderTable() {
     });
   }
   const orderCellStyle = reorderMode ? "text-align:center" : "text-align:center; display:none";
-  tbody.innerHTML = list.map((r) => `
-    <tr data-name="${r.name}">
+  tbody.innerHTML = list.map((r) => {
+    const mainRow = `
+    <tr data-name="${r.name}" class="${r.name === expandedName ? 'active-row' : ''}">
       <td><b>${r.name}</b><span class="grade-tag">${r.grade}</span></td>
       <td>${won(r.buy)}</td>
       <td>${won(r.cur)}</td>
@@ -465,85 +506,40 @@ function renderTable() {
         <span class="drag-handle" title="드래그해서 순서 변경">⠿</span>
       </td>
       <td><button class="del-link" data-del="${r.name}" onclick="event.stopPropagation()">삭제</button></td>
-    </tr>
-  `).join("");
-  tbody.querySelectorAll("tr").forEach(tr => {
+    </tr>`;
+    const detail = r.name === expandedName ? detailRowHtml(r.name) : "";
+    return mainRow + detail;
+  }).join("");
+
+  tbody.querySelectorAll("tr[data-name]").forEach(tr => {
     tr.addEventListener("click", () => {
       if (reorderMode) return;
       const name = tr.dataset.name;
       document.getElementById("cardSelect").value = name;
       renderChart(name);
-      if (expandedName === name) {
-        closeDetail();
-      } else {
-        openDetail(name);
+      expandedName = expandedName === name ? null : name;
+      renderTable();
+      if (expandedName) {
+        const opened = document.querySelector(`tr.detail-row[data-detail-for="${CSS.escape(expandedName)}"]`);
+        if (opened) opened.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
     });
   });
   tbody.querySelectorAll("[data-del]").forEach(btn => {
     btn.addEventListener("click", () => deleteCardFromGithub(btn.dataset.del));
   });
-  // 재정렬/추가/삭제 등으로 표가 다시 그려진 뒤에도 펼쳐진 카드 상태 유지
-  if (expandedName && list.some(r => r.name === expandedName)) {
-    highlightActiveRow(expandedName);
-  } else if (expandedName) {
-    closeDetail();
+  tbody.querySelectorAll("[data-close-detail]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      expandedName = null;
+      renderTable();
+    });
+  });
+
+  // 재정렬/추가/삭제 등으로 카드가 사라졌다면 펼침 상태 해제
+  if (expandedName && !list.some(r => r.name === expandedName)) {
+    expandedName = null;
   }
-}
-
-function renderCardDetail(name) {
-  const panel = document.getElementById("cardDetail");
-  const d = data[name];
-  if (!d) return;
-  const info = d.info || {};
-  const pop = typeof d.psa10Pop === "number" ? d.psa10Pop.toLocaleString("ko-KR") + "장" : "정보 없음";
-  const rows = [
-    ["PSA10 POP", pop],
-    ["획득 경로", info.acquired || "정보 없음"],
-    ["카드 특징", info.features || "정보 없음"],
-    ["카드 평가", info.comment || "정보 없음"],
-    ["5년 후 가치 예상", info.forecast || "정보 없음"],
-  ];
-  panel.innerHTML = `
-    <div class="detail-head">
-      <b>${name}</b>
-      <span class="grade-tag" style="margin-top:0">${d.grade}</span>
-      <button class="detail-close" id="detailCloseBtn" aria-label="닫기">✕ 닫기</button>
-    </div>
-    <div class="detail-grid">
-      ${rows.map(([label, value]) => `
-        <div class="detail-item">
-          <div class="dt-label">${label}</div>
-          <div class="dt-value">${value}</div>
-        </div>
-      `).join("")}
-    </div>
-  `;
-  document.getElementById("detailCloseBtn").addEventListener("click", (e) => {
-    e.stopPropagation();
-    closeDetail();
-  });
-}
-
-function highlightActiveRow(name) {
-  document.querySelectorAll("#cardTable tbody tr").forEach(tr => {
-    tr.classList.toggle("active-row", tr.dataset.name === name);
-  });
-}
-
-function openDetail(name) {
-  expandedName = name;
-  renderCardDetail(name);
-  const panel = document.getElementById("cardDetail");
-  panel.style.display = "block";
-  highlightActiveRow(name);
-  panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-
-function closeDetail() {
-  expandedName = null;
-  document.getElementById("cardDetail").style.display = "none";
-  highlightActiveRow(null);
 }
 
 let sortableInstance = null;
