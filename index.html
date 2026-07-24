@@ -15,13 +15,21 @@
     --bg-soft: #f9fafb;
   }
   * { box-sizing: border-box; }
+  html { background: #f3f4f6; }
   body {
-    margin: 0;
+    margin: 0 auto;
+    max-width: 1000px;
     padding: 24px;
     background: #ffffff;
     color: #111827;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Malgun Gothic", sans-serif;
     font-size: 14px;
+    box-shadow: 0 0 0 1px #e5e7eb;
+    min-height: 100vh;
+  }
+  @media (max-width: 640px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    table { font-size: 12px; }
   }
   h1 { font-size: 20px; margin: 0 0 4px 0; }
   h2 { font-size: 16px; margin: 28px 0 12px 0; }
