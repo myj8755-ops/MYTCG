@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>포켓몬 카드 포트폴리오</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
   :root {
     color-scheme: light;
@@ -195,21 +196,21 @@
     flex-wrap: wrap;
   }
   .table-toolbar .btn.secondary { padding: 5px 10px; font-size: 12px; }
-  .order-btns { display: inline-flex; gap: 3px; }
-  .order-btn {
-    width: 22px;
-    height: 22px;
-    line-height: 1;
-    border: 1px solid var(--border);
-    background: #fff;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 11px;
-    color: #374151;
-    padding: 0;
+  .drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 30px;
+    font-size: 18px;
+    color: #6b7280;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
   }
-  .order-btn:hover:not(:disabled) { background: var(--bg-soft); }
-  .order-btn:disabled { opacity: .3; cursor: not-allowed; }
+  .drag-handle:active { cursor: grabbing; }
+  #cardTable tbody tr.sortable-ghost { opacity: 0.4; background: #eff6ff; }
+  #cardTable tbody tr.sortable-chosen td { background: #eff6ff; }
   details.gh-settings { margin-top: 12px; font-size: 12.5px; }
   details.gh-settings summary { cursor: pointer; color: var(--gray); }
   .gh-settings-grid {
@@ -414,9 +415,8 @@ function renderTable() {
       return sortAsc ? av - bv : bv - av;
     });
   }
-  const canReorder = sortKey === null;
   const orderCellStyle = reorderMode ? "text-align:center" : "text-align:center; display:none";
-  tbody.innerHTML = list.map((r, i) => `
+  tbody.innerHTML = list.map((r) => `
     <tr data-name="${r.name}">
       <td><b>${r.name}</b><span class="grade-tag">${r.grade}</span></td>
       <td>${won(r.buy)}</td>
@@ -425,16 +425,14 @@ function renderTable() {
       <td class="${r.rate >= 0 ? 'pos' : 'neg'}">${pct(r.rate)}</td>
       <td><a class="snkrdunk-link" href="${data[r.name].url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">보기 →</a></td>
       <td class="order-cell" style="${orderCellStyle}">
-        <span class="order-btns">
-          <button class="order-btn" data-move="${r.name}" data-dir="-1" ${(!canReorder || i === 0) ? "disabled" : ""} onclick="event.stopPropagation()">▲</button>
-          <button class="order-btn" data-move="${r.name}" data-dir="1" ${(!canReorder || i === list.length - 1) ? "disabled" : ""} onclick="event.stopPropagation()">▼</button>
-        </span>
+        <span class="drag-handle" title="드래그해서 순서 변경">⠿</span>
       </td>
       <td><button class="del-link" data-del="${r.name}" onclick="event.stopPropagation()">삭제</button></td>
     </tr>
   `).join("");
   tbody.querySelectorAll("tr").forEach(tr => {
     tr.addEventListener("click", () => {
+      if (reorderMode) return;
       document.getElementById("cardSelect").value = tr.dataset.name;
       renderChart(tr.dataset.name);
     });
@@ -442,9 +440,24 @@ function renderTable() {
   tbody.querySelectorAll("[data-del]").forEach(btn => {
     btn.addEventListener("click", () => deleteCardFromGithub(btn.dataset.del));
   });
-  tbody.querySelectorAll("[data-move]").forEach(btn => {
-    btn.addEventListener("click", () => moveCard(btn.dataset.move, parseInt(btn.dataset.dir, 10)));
+}
+
+let sortableInstance = null;
+function enableRowDrag() {
+  const tbody = document.querySelector("#cardTable tbody");
+  if (sortableInstance) sortableInstance.destroy();
+  sortableInstance = new Sortable(tbody, {
+    handle: ".drag-handle",
+    animation: 150,
+    onEnd: (evt) => {
+      if (evt.oldIndex === evt.newIndex) return;
+      const newNames = Array.from(tbody.children).map(tr => tr.dataset.name);
+      saveOrderToGithub(newNames);
+    },
   });
+}
+function disableRowDrag() {
+  if (sortableInstance) { sortableInstance.destroy(); sortableInstance = null; }
 }
 
 const reorderToggleBtn = document.getElementById("reorderToggleBtn");
@@ -452,9 +465,11 @@ reorderToggleBtn.addEventListener("click", () => {
   reorderMode = !reorderMode;
   reorderToggleBtn.textContent = reorderMode ? "✓ 순서 편집 완료" : "✎ 순서 편집";
   document.querySelector("th.order-col").style.display = reorderMode ? "table-cell" : "none";
-  if (reorderMode && sortKey !== null) {
-    resetSortBtn.click();
+  if (reorderMode) {
+    if (sortKey !== null) { resetSortBtn.click(); } else { renderTable(); }
+    enableRowDrag();
   } else {
+    disableRowDrag();
     renderTable();
   }
 });
@@ -736,8 +751,8 @@ async function deleteCardFromGithub(name) {
 }
 
 let reorderBusy = false;
-async function moveCard(name, dir) {
-  if (sortKey !== null || reorderBusy) return;
+async function saveOrderToGithub(newNames) {
+  if (reorderBusy) return;
 
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
@@ -749,6 +764,7 @@ async function moveCard(name, dir) {
     toggle.open = true;
     statusEl.className = "add-status err";
     statusEl.textContent = "순서를 바꾸려면 아래 GitHub 연결 설정을 먼저 입력해주세요.";
+    renderTable();
     return;
   }
 
@@ -769,16 +785,14 @@ async function moveCard(name, dir) {
     const getJson = await getRes.json();
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
 
-    const names = cardNames(currentData);
-    const idx = names.indexOf(name);
-    const swapIdx = idx + dir;
-    if (idx === -1 || swapIdx < 0 || swapIdx >= names.length) {
-      throw new Error("순서를 바꿀 수 없습니다. 새로고침 후 다시 시도해주세요.");
-    }
-    [names[idx], names[swapIdx]] = [names[swapIdx], names[idx]];
+    // 드래그 이후 순서를 기준으로 최신 data.json의 카드들을 재배열.
+    // (드래그 중에 다른 곳에서 카드가 추가/삭제됐다면 그 카드는 맨 뒤에 붙임)
+    const known = new Set(cardNames(currentData));
+    const finalOrder = newNames.filter(n => known.has(n));
+    known.forEach(n => { if (!finalOrder.includes(n)) finalOrder.push(n); });
 
     const reordered = {};
-    names.forEach(n => { reordered[n] = currentData[n]; });
+    finalOrder.forEach(n => { reordered[n] = currentData[n]; });
     reordered._meta = { updatedAt: new Date().toISOString() };
 
     const putRes = await fetch(apiUrl, {
@@ -800,12 +814,15 @@ async function moveCard(name, dir) {
     buildRows();
     renderTable();
     buildSelect();
+    if (reorderMode) enableRowDrag();
 
     statusEl.className = "add-status ok";
     statusEl.textContent = "순서가 저장됐습니다. 1~2분 뒤 사이트에도 반영됩니다.";
   } catch (e) {
     statusEl.className = "add-status err";
     statusEl.textContent = e.message;
+    renderTable();
+    if (reorderMode) enableRowDrag();
   } finally {
     reorderBusy = false;
   }
