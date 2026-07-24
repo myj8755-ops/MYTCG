@@ -238,7 +238,7 @@
     .card { padding: 12px 14px; }
     .card .label { margin-bottom: 4px; }
     .card .value { font-size: 17px; white-space: nowrap; overflow-wrap: normal; }
-    table { font-size: 12px; min-width: 720px; }
+    table { font-size: 12px; min-width: 820px; }
     .table-toolbar { font-size: 11.5px; }
     .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
     .chart-controls { flex-wrap: wrap; }
@@ -276,7 +276,7 @@
 </div>
 
 <div class="note-box">
-  <b>계산 방식</b>: 스니커덩크 엔화 거래가 × 환율(자동 조회) × 1.10(한국 반입 시 관부가세 10%) = 실제 한국에서 이 카드를 사려면 드는 비용 기준. 등급은 전 카드 PSA10 기준입니다. 카드별 시세 추이 아래에서 카드를 골라 개별 손익도 확인할 수 있습니다.
+  <b>계산 방식</b>: 스니커덩크 엔화 거래가 × 환율(자동 조회) × 1.10(한국 반입 시 관부가세 10%) = 실제 한국에서 이 카드를 사려면 드는 비용 기준. 등급은 전 카드 PSA10 기준입니다. <b>PSA10 Pop</b>은 PSA 공식 population report 기준 해당 카드의 PSA10 등급 전 세계 발급 수량입니다(2026-07-24 기준, 이후 계속 증가할 수 있음). 카드별 시세 추이 아래에서 카드를 골라 개별 손익도 확인할 수 있습니다.
 </div>
 
 <div class="table-toolbar">
@@ -295,6 +295,7 @@
       <th data-key="cur">현재가(관부가세 포함)<span class="sort-arrow"></span></th>
       <th data-key="diff">손익액<span class="sort-arrow"></span></th>
       <th data-key="rate">수익률<span class="sort-arrow"></span></th>
+      <th data-key="pop">PSA10 Pop<span class="sort-arrow"></span></th>
       <th style="text-align:right">SNKRDUNK</th>
       <th class="order-col" style="text-align:center; display:none">순서</th>
       <th style="text-align:right"></th>
@@ -398,7 +399,8 @@ function buildRows() {
     const cur = d.series[d.series.length-1][1];
     const diff = cur - d.buy;
     const rate = diff / d.buy * 100;
-    return { name, grade: d.grade, buy: d.buy, cur, diff, rate };
+    const pop = typeof d.psa10Pop === "number" ? d.psa10Pop : null;
+    return { name, grade: d.grade, buy: d.buy, cur, diff, rate, pop };
   });
 }
 
@@ -423,6 +425,7 @@ function renderTable() {
       <td>${won(r.cur)}</td>
       <td class="${r.diff >= 0 ? 'pos' : 'neg'}">${signedWon(r.diff)}</td>
       <td class="${r.rate >= 0 ? 'pos' : 'neg'}">${pct(r.rate)}</td>
+      <td>${r.pop !== null ? r.pop.toLocaleString("ko-KR") + "장" : "-"}</td>
       <td><a class="snkrdunk-link" href="${data[r.name].url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">보기 →</a></td>
       <td class="order-cell" style="${orderCellStyle}">
         <span class="drag-handle" title="드래그해서 순서 변경">⠿</span>
@@ -513,8 +516,9 @@ function renderChart(name) {
   const diff = cur - d.buy;
   const rate = diff / d.buy * 100;
 
+  const popText = typeof d.psa10Pop === "number" ? ` · PSA10 Pop ${d.psa10Pop.toLocaleString("ko-KR")}장` : "";
   document.getElementById("chartStats").innerHTML =
-    `구매가 ${won(d.buy)} → 현재가 ${won(cur)} · <span class="${diff>=0?'pos':'neg'}">${signedWon(diff)} (${pct(rate)})</span>`;
+    `구매가 ${won(d.buy)} → 현재가 ${won(cur)} · <span class="${diff>=0?'pos':'neg'}">${signedWon(diff)} (${pct(rate)})</span>${popText}`;
   document.getElementById("chartLink").href = data[name].url;
 
   const ctx = document.getElementById("trendChart").getContext("2d");
