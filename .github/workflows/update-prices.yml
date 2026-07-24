@@ -2,8 +2,12 @@ name: Update TCG prices
 
 on:
   schedule:
-    - cron: "0 21 * * *"   # 매일 06:00 KST (UTC 21:00 전날)
-  workflow_dispatch: {}     # Actions 탭에서 수동 실행 버튼도 사용 가능
+    - cron: "0 21 * * *"  # 매일 06:00 KST (UTC 21:00 전날)
+  workflow_dispatch: {}    # Actions 탭에서 수동 실행 버튼도 사용 가능
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -26,6 +30,9 @@ jobs:
 
       - name: Run scraper
         run: node scrape.mjs
+
+      - name: Pull latest changes before commit
+        run: git pull --rebase origin main
 
       - name: Commit and push if data changed
         uses: stefanzweifel/git-auto-commit-action@v5
