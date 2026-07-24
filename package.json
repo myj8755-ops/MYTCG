@@ -1,0 +1,12 @@
+{
+  "name": "tcg-price-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scrape": "node scrape.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.47.0"
+  }
+}
