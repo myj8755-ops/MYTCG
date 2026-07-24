@@ -211,6 +211,38 @@
   .drag-handle:active { cursor: grabbing; }
   #cardTable tbody tr.sortable-ghost { opacity: 0.4; background: #eff6ff; }
   #cardTable tbody tr.sortable-chosen td { background: #eff6ff; }
+  #cardTable tbody tr.active-row { background: #eff6ff; }
+  #cardTable tbody tr.active-row:hover { background: #eff6ff; }
+  .card-detail {
+    display: none;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 16px 18px;
+    background: #f0f7ff;
+    margin-top: 10px;
+  }
+  .detail-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .detail-head b { font-size: 15px; }
+  .detail-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--gray);
+    padding: 2px 6px;
+    line-height: 1;
+  }
+  .detail-close:hover { color: #111827; }
+  .detail-grid { display: grid; gap: 12px; }
+  .detail-item .dt-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #2563eb;
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+  }
+  .detail-item .dt-value { font-size: 13px; line-height: 1.7; color: #111827; }
   details.gh-settings { margin-top: 12px; font-size: 12.5px; }
   details.gh-settings summary { cursor: pointer; color: var(--gray); }
   .gh-settings-grid {
@@ -276,7 +308,7 @@
 </div>
 
 <div class="note-box">
-  <b>계산 방식</b>: 스니커덩크 엔화 거래가 × 환율(자동 조회) × 1.10(한국 반입 시 관부가세 10%) = 실제 한국에서 이 카드를 사려면 드는 비용 기준. 등급은 전 카드 PSA10 기준입니다. <b>PSA10 Pop</b>은 PSA 공식 population report 기준 해당 카드의 PSA10 등급 전 세계 발급 수량입니다(2026-07-24 기준, 이후 계속 증가할 수 있음). 카드별 시세 추이 아래에서 카드를 골라 개별 손익도 확인할 수 있습니다.
+  <b>계산 방식</b>: 스니커덩크 엔화 거래가 × 환율(자동 조회) × 1.10(한국 반입 시 관부가세 10%) = 실제 한국에서 이 카드를 사려면 드는 비용 기준. 등급은 전 카드 PSA10 기준입니다. <b>PSA10 Pop</b>은 PSA 공식 population report 기준 해당 카드의 PSA10 등급 전 세계 발급 수량입니다(2026-07-24 기준, 이후 계속 증가할 수 있음). 표에서 카드 행을 클릭하면 바로 아래에 획득 경로·특징·평가·5년 후 가치 예상이 펼쳐집니다(평가/전망은 개인 추정치이며 투자 조언이 아닙니다). 카드별 시세 추이 아래에서 카드를 골라 개별 손익도 확인할 수 있습니다.
 </div>
 
 <div class="table-toolbar">
@@ -304,6 +336,7 @@
   <tbody></tbody>
 </table>
 </div>
+<div class="card-detail" id="cardDetail"></div>
 
 <details class="add-toggle">
 <summary><h2 style="display:inline">➕ 카드 추가</h2></summary>
@@ -406,6 +439,7 @@ function buildRows() {
 
 let sortKey = null, sortAsc = true;
 let reorderMode = false;
+let expandedName = null;
 
 function renderTable() {
   const tbody = document.querySelector("#cardTable tbody");
@@ -436,13 +470,80 @@ function renderTable() {
   tbody.querySelectorAll("tr").forEach(tr => {
     tr.addEventListener("click", () => {
       if (reorderMode) return;
-      document.getElementById("cardSelect").value = tr.dataset.name;
-      renderChart(tr.dataset.name);
+      const name = tr.dataset.name;
+      document.getElementById("cardSelect").value = name;
+      renderChart(name);
+      if (expandedName === name) {
+        closeDetail();
+      } else {
+        openDetail(name);
+      }
     });
   });
   tbody.querySelectorAll("[data-del]").forEach(btn => {
     btn.addEventListener("click", () => deleteCardFromGithub(btn.dataset.del));
   });
+  // 재정렬/추가/삭제 등으로 표가 다시 그려진 뒤에도 펼쳐진 카드 상태 유지
+  if (expandedName && list.some(r => r.name === expandedName)) {
+    highlightActiveRow(expandedName);
+  } else if (expandedName) {
+    closeDetail();
+  }
+}
+
+function renderCardDetail(name) {
+  const panel = document.getElementById("cardDetail");
+  const d = data[name];
+  if (!d) return;
+  const info = d.info || {};
+  const pop = typeof d.psa10Pop === "number" ? d.psa10Pop.toLocaleString("ko-KR") + "장" : "정보 없음";
+  const rows = [
+    ["PSA10 POP", pop],
+    ["획득 경로", info.acquired || "정보 없음"],
+    ["카드 특징", info.features || "정보 없음"],
+    ["카드 평가", info.comment || "정보 없음"],
+    ["5년 후 가치 예상", info.forecast || "정보 없음"],
+  ];
+  panel.innerHTML = `
+    <div class="detail-head">
+      <b>${name}</b>
+      <span class="grade-tag" style="margin-top:0">${d.grade}</span>
+      <button class="detail-close" id="detailCloseBtn" aria-label="닫기">✕ 닫기</button>
+    </div>
+    <div class="detail-grid">
+      ${rows.map(([label, value]) => `
+        <div class="detail-item">
+          <div class="dt-label">${label}</div>
+          <div class="dt-value">${value}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+  document.getElementById("detailCloseBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeDetail();
+  });
+}
+
+function highlightActiveRow(name) {
+  document.querySelectorAll("#cardTable tbody tr").forEach(tr => {
+    tr.classList.toggle("active-row", tr.dataset.name === name);
+  });
+}
+
+function openDetail(name) {
+  expandedName = name;
+  renderCardDetail(name);
+  const panel = document.getElementById("cardDetail");
+  panel.style.display = "block";
+  highlightActiveRow(name);
+  panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function closeDetail() {
+  expandedName = null;
+  document.getElementById("cardDetail").style.display = "none";
+  highlightActiveRow(null);
 }
 
 let sortableInstance = null;
