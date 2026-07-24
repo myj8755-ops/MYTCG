@@ -186,6 +186,30 @@
     font-weight: 600;
   }
   .del-link:hover { text-decoration: underline; }
+  .table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .table-toolbar .btn.secondary { padding: 5px 10px; font-size: 12px; }
+  .order-btns { display: inline-flex; gap: 3px; }
+  .order-btn {
+    width: 22px;
+    height: 22px;
+    line-height: 1;
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #374151;
+    padding: 0;
+  }
+  .order-btn:hover:not(:disabled) { background: var(--bg-soft); }
+  .order-btn:disabled { opacity: .3; cursor: not-allowed; }
   details.gh-settings { margin-top: 12px; font-size: 12.5px; }
   details.gh-settings summary { cursor: pointer; color: var(--gray); }
   .gh-settings-grid {
@@ -213,7 +237,8 @@
     .card { padding: 12px 14px; }
     .card .label { margin-bottom: 4px; }
     .card .value { font-size: 17px; white-space: nowrap; overflow-wrap: normal; }
-    table { font-size: 12px; min-width: 640px; }
+    table { font-size: 12px; min-width: 720px; }
+    .table-toolbar { font-size: 11.5px; }
     .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
     .chart-controls { flex-wrap: wrap; }
     .chart-controls .left { flex-wrap: wrap; gap: 6px; }
@@ -253,6 +278,13 @@
   <b>계산 방식</b>: 스니커덩크 엔화 거래가 × 환율(자동 조회) × 1.10(한국 반입 시 관부가세 10%) = 실제 한국에서 이 카드를 사려면 드는 비용 기준. 등급은 전 카드 PSA10 기준입니다. 카드별 시세 추이 아래에서 카드를 골라 개별 손익도 확인할 수 있습니다.
 </div>
 
+<div class="table-toolbar">
+  <span class="grade-tag" id="sortHint">표 제목을 누르면 정렬돼요.</span>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button class="btn secondary" id="reorderToggleBtn">✎ 순서 편집</button>
+    <button class="btn secondary" id="resetSortBtn" style="display:none">정렬 해제 (기본 순서로)</button>
+  </div>
+</div>
 <div class="table-scroll">
 <table id="cardTable">
   <thead>
@@ -263,6 +295,7 @@
       <th data-key="diff">손익액<span class="sort-arrow"></span></th>
       <th data-key="rate">수익률<span class="sort-arrow"></span></th>
       <th style="text-align:right">SNKRDUNK</th>
+      <th class="order-col" style="text-align:center; display:none">순서</th>
       <th style="text-align:right"></th>
     </tr>
   </thead>
@@ -369,6 +402,7 @@ function buildRows() {
 }
 
 let sortKey = null, sortAsc = true;
+let reorderMode = false;
 
 function renderTable() {
   const tbody = document.querySelector("#cardTable tbody");
@@ -380,7 +414,9 @@ function renderTable() {
       return sortAsc ? av - bv : bv - av;
     });
   }
-  tbody.innerHTML = list.map(r => `
+  const canReorder = sortKey === null;
+  const orderCellStyle = reorderMode ? "text-align:center" : "text-align:center; display:none";
+  tbody.innerHTML = list.map((r, i) => `
     <tr data-name="${r.name}">
       <td><b>${r.name}</b><span class="grade-tag">${r.grade}</span></td>
       <td>${won(r.buy)}</td>
@@ -388,6 +424,12 @@ function renderTable() {
       <td class="${r.diff >= 0 ? 'pos' : 'neg'}">${signedWon(r.diff)}</td>
       <td class="${r.rate >= 0 ? 'pos' : 'neg'}">${pct(r.rate)}</td>
       <td><a class="snkrdunk-link" href="${data[r.name].url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">보기 →</a></td>
+      <td class="order-cell" style="${orderCellStyle}">
+        <span class="order-btns">
+          <button class="order-btn" data-move="${r.name}" data-dir="-1" ${(!canReorder || i === 0) ? "disabled" : ""} onclick="event.stopPropagation()">▲</button>
+          <button class="order-btn" data-move="${r.name}" data-dir="1" ${(!canReorder || i === list.length - 1) ? "disabled" : ""} onclick="event.stopPropagation()">▼</button>
+        </span>
+      </td>
       <td><button class="del-link" data-del="${r.name}" onclick="event.stopPropagation()">삭제</button></td>
     </tr>
   `).join("");
@@ -400,7 +442,30 @@ function renderTable() {
   tbody.querySelectorAll("[data-del]").forEach(btn => {
     btn.addEventListener("click", () => deleteCardFromGithub(btn.dataset.del));
   });
+  tbody.querySelectorAll("[data-move]").forEach(btn => {
+    btn.addEventListener("click", () => moveCard(btn.dataset.move, parseInt(btn.dataset.dir, 10)));
+  });
 }
+
+const reorderToggleBtn = document.getElementById("reorderToggleBtn");
+reorderToggleBtn.addEventListener("click", () => {
+  reorderMode = !reorderMode;
+  reorderToggleBtn.textContent = reorderMode ? "✓ 순서 편집 완료" : "✎ 순서 편집";
+  document.querySelector("th.order-col").style.display = reorderMode ? "table-cell" : "none";
+  if (reorderMode && sortKey !== null) {
+    resetSortBtn.click();
+  } else {
+    renderTable();
+  }
+});
+
+const resetSortBtn = document.getElementById("resetSortBtn");
+resetSortBtn.addEventListener("click", () => {
+  sortKey = null;
+  document.querySelectorAll(".sort-arrow").forEach(a => a.textContent = "");
+  resetSortBtn.style.display = "none";
+  renderTable();
+});
 
 document.querySelectorAll("#cardTable thead th[data-key]").forEach(th => {
   th.addEventListener("click", () => {
@@ -408,6 +473,7 @@ document.querySelectorAll("#cardTable thead th[data-key]").forEach(th => {
     if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
     document.querySelectorAll(".sort-arrow").forEach(a => a.textContent = "");
     th.querySelector(".sort-arrow").textContent = sortAsc ? "▲" : "▼";
+    resetSortBtn.style.display = "inline-block";
     renderTable();
   });
 });
@@ -666,6 +732,82 @@ async function deleteCardFromGithub(name) {
   } catch (e) {
     statusEl.className = "add-status err";
     statusEl.textContent = e.message;
+  }
+}
+
+let reorderBusy = false;
+async function moveCard(name, dir) {
+  if (sortKey !== null || reorderBusy) return;
+
+  const owner = ghOwnerEl.value.trim();
+  const repo = ghRepoEl.value.trim();
+  const token = ghTokenEl.value.trim();
+  const statusEl = document.getElementById("addStatus");
+  const toggle = document.querySelector("details.add-toggle");
+
+  if (!owner || !repo || !token) {
+    toggle.open = true;
+    statusEl.className = "add-status err";
+    statusEl.textContent = "순서를 바꾸려면 아래 GitHub 연결 설정을 먼저 입력해주세요.";
+    return;
+  }
+
+  reorderBusy = true;
+  toggle.open = true;
+  statusEl.className = "add-status";
+  statusEl.textContent = "순서를 저장하는 중...";
+
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+  };
+
+  try {
+    const getRes = await fetch(apiUrl, { headers });
+    if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
+    const getJson = await getRes.json();
+    const currentData = JSON.parse(b64ToUtf8(getJson.content));
+
+    const names = cardNames(currentData);
+    const idx = names.indexOf(name);
+    const swapIdx = idx + dir;
+    if (idx === -1 || swapIdx < 0 || swapIdx >= names.length) {
+      throw new Error("순서를 바꿀 수 없습니다. 새로고침 후 다시 시도해주세요.");
+    }
+    [names[idx], names[swapIdx]] = [names[swapIdx], names[idx]];
+
+    const reordered = {};
+    names.forEach(n => { reordered[n] = currentData[n]; });
+    reordered._meta = { updatedAt: new Date().toISOString() };
+
+    const putRes = await fetch(apiUrl, {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "chore: reorder cards",
+        content: utf8ToB64(JSON.stringify(reordered, null, 1)),
+        sha: getJson.sha,
+      }),
+    });
+    if (!putRes.ok) {
+      const errJson = await putRes.json().catch(() => ({}));
+      throw new Error(`순서 저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
+    }
+
+    data = reordered;
+    renderSummary();
+    buildRows();
+    renderTable();
+    buildSelect();
+
+    statusEl.className = "add-status ok";
+    statusEl.textContent = "순서가 저장됐습니다. 1~2분 뒤 사이트에도 반영됩니다.";
+  } catch (e) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = e.message;
+  } finally {
+    reorderBusy = false;
   }
 }
 
