@@ -47,6 +47,7 @@ async function main() {
   });
 
   for (const name of Object.keys(data)) {
+    if (name === "_meta") continue;
     const card = data[name];
     if (!card.url) {
       console.log(`[skip] ${name}: URL 없음`);
@@ -75,6 +76,7 @@ async function main() {
   }
 
   await browser.close();
+  data._meta = { updatedAt: new Date().toISOString() };
   await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 1), "utf-8");
   console.log("data.json 갱신 완료:", today, "(환율:", rate, ")");
 }
