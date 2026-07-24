@@ -53,8 +53,8 @@ async function main() {
       continue;
     }
     try {
-      await page.goto(card.url, { waitUntil: "networkidle", timeout: 30000 });
-      await page.waitForTimeout(1500);
+      await page.goto(card.url, { waitUntil: "domcontentloaded", timeout: 20000 });
+      await page.waitForTimeout(2500);
       const text = await page.evaluate(() => document.body.innerText);
       const jpy = extractLatestPsa10(text);
       if (jpy === null) {
