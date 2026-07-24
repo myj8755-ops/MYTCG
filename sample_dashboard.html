@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포켓몬 카드 포트폴리오 (샘플)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --green: #16a34a;
+    --red: #dc2626;
+    --gray: #6b7280;
+    --border: #e5e7eb;
+    --bg-soft: #f9fafb;
+  }
+  * { box-sizing: border-box; }
+  html { background: #f3f4f6; }
+  body {
+    margin: 0 auto;
+    max-width: 900px;
+    padding: 24px;
+    background: #ffffff;
+    color: #111827;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Malgun Gothic", sans-serif;
+    font-size: 14px;
+    box-shadow: 0 0 0 1px #e5e7eb;
+    min-height: 100vh;
+  }
+  @media (max-width: 640px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    table { font-size: 12px; }
+  }
+  h1 { font-size: 20px; margin: 0 0 4px 0; }
+  h2 { font-size: 16px; margin: 28px 0 12px 0; }
+  .subtitle { color: var(--gray); font-size: 13px; margin-bottom: 20px; }
+  .badge-sample {
+    display: inline-block;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: var(--bg-soft);
+  }
+  .card .label { font-size: 12px; color: var(--gray); margin-bottom: 6px; }
+  .card .value { font-size: 18px; font-weight: 700; }
+  .card .value.pos { color: var(--green); }
+  .card .value.neg { color: var(--red); }
+  .note-box {
+    border: 1px solid #fde68a;
+    background: #fffbeb;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: #92400e;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: right;
+    padding: 8px 10px;
+    border-bottom: 2px solid #111827;
+    background: #fff;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    font-size: 12px;
+    color: #374151;
+  }
+  thead th:first-child { text-align: left; }
+  thead th:hover { color: #111827; }
+  tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    white-space: nowrap;
+  }
+  tbody td:first-child { text-align: left; white-space: normal; }
+  tbody tr:hover { background: var(--bg-soft); cursor: pointer; }
+  .pos { color: var(--green); font-weight: 600; }
+  .neg { color: var(--red); font-weight: 600; }
+  .grade-tag { font-size: 11px; color: var(--gray); display: block; margin-top: 2px; }
+  .chart-section {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    background: #fff;
+  }
+  .chart-controls { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .chart-controls .left { display:flex; align-items:center; gap:10px; }
+  .ref-link {
+    font-size: 12.5px;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .ref-link:hover { text-decoration: underline; }
+  select#cardSelect {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .chart-stats { font-size: 12.5px; color: var(--gray); }
+  .chart-wrap { position: relative; height: 320px; }
+  footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 1.8;
+  }
+  footer b { color: #374151; }
+  .sort-arrow { font-size: 10px; margin-left: 2px; }
+</style>
+</head>
+<body>
+
+<h1>🎴 포켓몬 카드 포트폴리오 <span class="badge-sample">SAMPLE</span></h1>
+<div class="subtitle">예시용 카드 10종 · 실제 시세가 아닌 데모용 가상 데이터입니다</div>
+
+<div class="summary-grid">
+  <div class="card">
+    <div class="label">총 구매금액 (10종)</div>
+    <div class="value">₩16,440,000</div>
+  </div>
+  <div class="card">
+    <div class="label">평가금액</div>
+    <div class="value">₩19,690,700</div>
+  </div>
+  <div class="card">
+    <div class="label">평가손익</div>
+    <div class="value pos">+₩3,250,700</div>
+  </div>
+  <div class="card">
+    <div class="label">수익률</div>
+    <div class="value pos">+19.8%</div>
+  </div>
+</div>
+
+<div class="note-box">
+  이 페이지는 데모/공유용 샘플입니다. 카드명과 등급은 실제 존재하는 포켓몬 카드를 참고했지만, 구매가·현재가·추이 그래프는 전부 가상의 예시 숫자입니다. 실제 보유 카드나 스니커덩크 실거래가와는 무관합니다.
+</div>
+
+<table id="cardTable">
+  <thead>
+    <tr>
+      <th data-key="name" style="text-align:left">카드명<span class="sort-arrow"></span></th>
+      <th data-key="buy">구매가<span class="sort-arrow"></span></th>
+      <th data-key="cur">현재가<span class="sort-arrow"></span></th>
+      <th data-key="diff">손익액<span class="sort-arrow"></span></th>
+      <th data-key="rate">수익률<span class="sort-arrow"></span></th>
+      <th style="text-align:right">참고링크</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<h2>📈 카드별 시세 추이</h2>
+<div class="chart-section">
+  <div class="chart-controls">
+    <div class="left">
+      <select id="cardSelect"></select>
+      <span class="chart-stats" id="chartStats"></span>
+    </div>
+    <a id="chartLink" class="ref-link" href="#" target="_blank" rel="noopener">SNKRDUNK에서 검색 →</a>
+  </div>
+  <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+  <div class="grade-tag" style="margin-top:8px">점선은 구매가입니다. (샘플 데이터 기준)</div>
+</div>
+
+<script>
+const refUrls = {
+  "피카츄 일러스트레이터": "https://snkrdunk.com/search?word=%E3%83%94%E3%82%AB%E3%83%81%E3%83%A5%E3%82%A6%20%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%88%E3%83%AC%E3%83%BC%E3%82%BF%E3%83%BC",
+  "리자몽 GX SA": "https://snkrdunk.com/search?word=%E3%83%AA%E3%82%B6%E3%83%BC%E3%83%89%E3%83%B3%20GX%20SA",
+  "뮤 EX 골드스타": "https://snkrdunk.com/search?word=%E3%83%9F%E3%83%A5%E3%82%A6%20EX%20%E3%82%B4%E3%83%BC%E3%83%AB%E3%83%89%E3%82%B9%E3%82%BF%E3%83%BC",
+  "루기아 1st Edition": "https://snkrdunk.com/search?word=%E3%83%AB%E3%82%AE%E3%82%A2%20%E5%88%9D%E7%89%88",
+  "갸라도스 홀로(에러카드)": "https://snkrdunk.com/search?word=%E3%82%AE%E3%83%A3%E3%83%A9%E3%83%89%E3%82%B9%20%E3%83%9B%E3%83%AD%20%E3%82%A8%E3%83%A9%E3%83%BC",
+  "이상해씨 홀로 1999": "https://snkrdunk.com/search?word=%E3%83%95%E3%82%B7%E3%82%AE%E3%83%80%E3%83%8D%20%E3%83%9B%E3%83%AD%201999",
+  "뮤츠 GX 레인보우": "https://snkrdunk.com/search?word=%E3%83%9F%E3%83%A5%E3%82%A6%E3%83%84%E3%83%BC%20GX%20%E3%83%AC%E3%82%A4%E3%83%B3%E3%83%9C%E3%83%BC",
+  "네크로즈마 GX SA": "https://snkrdunk.com/search?word=%E3%83%8D%E3%82%AF%E3%83%AD%E3%82%BA%E3%83%9E%20GX%20SA",
+  "세레비 크리스탈": "https://snkrdunk.com/search?word=%E3%82%BB%E3%83%AC%E3%83%93%E3%82%A3%20%E3%82%AF%E3%83%AA%E3%82%B9%E3%82%BF%E3%83%AB",
+  "블래스토이즈 리메이크": "https://snkrdunk.com/search?word=%E3%82%AB%E3%83%A1%E3%83%83%E3%82%AF%E3%82%B9%20%E3%83%AA%E3%83%A1%E3%82%A4%E3%82%AF"
+};
+
+const data ={"피카츄 일러스트레이터": {"buy": 8500000, "grade": "프로모 · PSA9", "series": [["2026-05-25", 7136720], ["2026-06-06", 7929456], ["2026-06-18", 9119834], ["2026-06-30", 9930427], ["2026-07-12", 10967123], ["2026-07-24", 11475000]]}, "리자몽 GX SA": {"buy": 1200000, "grade": "SM-P 레인보우 · PSA10", "series": [["2026-06-09", 994225], ["2026-06-14", 1053158], ["2026-06-20", 1133900], ["2026-06-25", 1179016], ["2026-07-01", 1242929], ["2026-07-07", 1290821], ["2026-07-12", 1310415], ["2026-07-18", 1361897], ["2026-07-24", 1416000]]}, "뮤 EX 골드스타": {"buy": 950000, "grade": "EX 파워키퍼 · PSA9", "series": [["2026-06-04", 925762], ["2026-06-14", 892578], ["2026-06-24", 829595], ["2026-07-04", 773053], ["2026-07-14", 753082], ["2026-07-24", 684000]]}, "루기아 1st Edition": {"buy": 3200000, "grade": "네오 제네시스 · PSA8", "series": [["2026-05-15", 2859234], ["2026-05-23", 2877845], ["2026-06-01", 2998327], ["2026-06-10", 3053798], ["2026-06-19", 3079850], ["2026-06-27", 3262180], ["2026-07-06", 3184229], ["2026-07-15", 3301425], ["2026-07-24", 3360000]]}, "갸라도스 홀로(에러카드)": {"buy": 680000, "grade": "베이스셋 · PSA9", "series": [["2026-06-14", 667264], ["2026-06-19", 675216], ["2026-06-25", 728615], ["2026-07-01", 775689], ["2026-07-06", 805130], ["2026-07-12", 858538], ["2026-07-18", 892033], ["2026-07-24", 965600]]}, "이상해씨 홀로 1999": {"buy": 420000, "grade": "베이스셋 1판 · PSA8", "series": [["2026-05-30", 366371], ["2026-06-06", 375555], ["2026-06-14", 376339], ["2026-06-22", 375643], ["2026-06-30", 357367], ["2026-07-08", 373898], ["2026-07-16", 370762], ["2026-07-24", 369600]]}, "뮤츠 GX 레인보우": {"buy": 310000, "grade": "SM 하이클래스 · PSA10", "series": [["2026-06-19", 298267], ["2026-06-23", 279430], ["2026-06-27", 266855], ["2026-07-02", 258719], ["2026-07-06", 250963], ["2026-07-10", 238730], ["2026-07-15", 218050], ["2026-07-19", 204248], ["2026-07-24", 201500]]}, "네크로즈마 GX SA": {"buy": 260000, "grade": "SM 하이클래스 · PSA10", "series": [["2026-06-24", 231860], ["2026-06-28", 238970], ["2026-07-02", 255319], ["2026-07-06", 258122], ["2026-07-11", 277429], ["2026-07-15", 299644], ["2026-07-19", 307422], ["2026-07-24", 317200]]}, "세레비 크리스탈": {"buy": 540000, "grade": "네오 디스커버리 · PSA9", "series": [["2026-06-09", 488020], ["2026-06-16", 477361], ["2026-06-24", 490856], ["2026-07-01", 504065], ["2026-07-09", 485539], ["2026-07-16", 479427], ["2026-07-24", 491400]]}, "블래스토이즈 리메이크": {"buy": 380000, "grade": "베이스셋 2판 · PSA9", "series": [["2026-06-14", 317956], ["2026-06-19", 329354], ["2026-06-24", 353601], ["2026-06-29", 368507], ["2026-07-04", 367850], ["2026-07-09", 366940], ["2026-07-14", 386581], ["2026-07-19", 416228], ["2026-07-24", 410400]]}};
+
+function won(n) { return "₩" + Math.round(n).toLocaleString("ko-KR"); }
+function signedWon(n) { return (n >= 0 ? "+" : "") + won(n); }
+function pct(n) { return (n >= 0 ? "+" : "") + n.toFixed(1) + "%"; }
+
+const rows = Object.keys(data).map(name => {
+  const d = data[name];
+  const cur = d.series[d.series.length-1][1];
+  const diff = cur - d.buy;
+  const rate = diff / d.buy * 100;
+  return { name, grade: d.grade, buy: d.buy, cur, diff, rate };
+});
+
+let sortKey = null, sortAsc = true;
+
+function renderTable() {
+  const tbody = document.querySelector("#cardTable tbody");
+  let list = [...rows];
+  if (sortKey) {
+    list.sort((a, b) => {
+      let av = a[sortKey], bv = b[sortKey];
+      if (typeof av === "string") return sortAsc ? av.localeCompare(bv, "ko") : bv.localeCompare(av, "ko");
+      return sortAsc ? av - bv : bv - av;
+    });
+  }
+  tbody.innerHTML = list.map(r => `
+    <tr data-name="${r.name}">
+      <td><b>${r.name}</b><span class="grade-tag">${r.grade}</span></td>
+      <td>${won(r.buy)}</td>
+      <td>${won(r.cur)}</td>
+      <td class="${r.diff >= 0 ? 'pos' : 'neg'}">${signedWon(r.diff)}</td>
+      <td class="${r.rate >= 0 ? 'pos' : 'neg'}">${pct(r.rate)}</td>
+      <td><a class="ref-link" href="${refUrls[r.name]}" target="_blank" rel="noopener" onclick="event.stopPropagation()">보기 →</a></td>
+    </tr>
+  `).join("");
+  tbody.querySelectorAll("tr").forEach(tr => {
+    tr.addEventListener("click", () => {
+      document.getElementById("cardSelect").value = tr.dataset.name;
+      renderChart(tr.dataset.name);
+    });
+  });
+}
+
+document.querySelectorAll("#cardTable thead th").forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
+    document.querySelectorAll(".sort-arrow").forEach(a => a.textContent = "");
+    th.querySelector(".sort-arrow").textContent = sortAsc ? "▲" : "▼";
+    renderTable();
+  });
+});
+
+const select = document.getElementById("cardSelect");
+Object.keys(data).forEach(name => {
+  const opt = document.createElement("option");
+  opt.value = name; opt.textContent = name;
+  select.appendChild(opt);
+});
+
+let chart = null;
+function renderChart(name) {
+  const d = data[name];
+  const labels = d.series.map(p => p[0]);
+  const values = d.series.map(p => p[1]);
+  const buyLine = labels.map(() => d.buy);
+  const cur = values[values.length-1];
+  const diff = cur - d.buy;
+  const rate = diff / d.buy * 100;
+
+  document.getElementById("chartStats").innerHTML =
+    `구매가 ${won(d.buy)} → 현재가 ${won(cur)} · <span class="${diff>=0?'pos':'neg'}">${signedWon(diff)} (${pct(rate)})</span>`;
+  document.getElementById("chartLink").href = refUrls[name];
+
+  const ctx = document.getElementById("trendChart").getContext("2d");
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "시세",
+          data: values,
+          borderColor: "#2563eb",
+          backgroundColor: "rgba(37,99,235,0.08)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+        },
+        {
+          label: "구매가",
+          data: buyLine,
+          borderColor: "#9ca3af",
+          borderDash: [6,4],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "top", labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        y: { ticks: { callback: v => "₩" + (v/10000).toFixed(0) + "만" } },
+        x: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+select.addEventListener("change", () => renderChart(select.value));
+
+renderTable();
+renderChart(Object.keys(data)[0]);
+</script>
+
+<footer>
+  <b>안내</b>: 본 페이지는 샘플/데모용입니다. 실제 카드 시세와 무관한 예시 데이터로 구성되어 있습니다.
+</footer>
+
+</body>
+</html>
