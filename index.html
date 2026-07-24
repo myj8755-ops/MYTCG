@@ -28,8 +28,26 @@
     min-height: 100vh;
   }
   @media (max-width: 640px) {
-    .summary-grid { grid-template-columns: repeat(2, 1fr); }
-    table { font-size: 12px; }
+    body { padding: 14px; font-size: 13px; }
+    h1 { font-size: 17px; }
+    h2 { font-size: 15px; margin: 22px 0 10px 0; }
+    .subtitle { font-size: 12px; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .card { padding: 10px 12px; }
+    .card .value { font-size: 15px; }
+    table { font-size: 12px; min-width: 640px; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
+    .chart-controls { flex-wrap: wrap; }
+    .chart-controls .left { flex-wrap: wrap; gap: 6px; }
+    .chart-wrap { height: 240px; }
+    .add-grid { grid-template-columns: 1fr; }
+    .gh-settings-grid { grid-template-columns: 1fr; }
+    .add-actions { flex-direction: column; align-items: flex-start; }
+    .btn { width: 100%; }
+  }
+  @media (max-width: 380px) {
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+    .card .value { font-size: 14px; }
   }
   h1 { font-size: 20px; margin: 0 0 4px 0; }
   h2 { font-size: 16px; margin: 28px 0 12px 0; }
@@ -235,6 +253,7 @@
   <b>계산 방식</b>: 스니커덩크 엔화 거래가 × 환율(자동 조회) × 1.10(한국 반입 시 관부가세 10%) = 실제 한국에서 이 카드를 사려면 드는 비용 기준. 등급은 전 카드 PSA10 기준입니다. 카드별 시세 추이 아래에서 카드를 골라 개별 손익도 확인할 수 있습니다.
 </div>
 
+<div class="table-scroll">
 <table id="cardTable">
   <thead>
     <tr>
@@ -249,6 +268,7 @@
   </thead>
   <tbody></tbody>
 </table>
+</div>
 
 <details class="add-toggle">
 <summary><h2 style="display:inline">➕ 카드 추가</h2></summary>
