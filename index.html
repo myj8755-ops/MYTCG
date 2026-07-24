@@ -14,8 +14,8 @@
     --border: #e5e7eb;
     --bg-soft: #f9fafb;
   }
-  * { box-sizing: border-box; }
-  html { background: #f3f4f6; }
+  * { box-sizing: border-box; min-width: 0; }
+  html { background: #f3f4f6; overflow-x: hidden; }
   body {
     margin: 0 auto;
     max-width: 900px;
@@ -26,15 +26,16 @@
     font-size: 14px;
     box-shadow: 0 0 0 1px #e5e7eb;
     min-height: 100vh;
+    overflow-x: hidden;
   }
   @media (max-width: 640px) {
     body { padding: 14px; font-size: 13px; }
     h1 { font-size: 17px; }
     h2 { font-size: 15px; margin: 22px 0 10px 0; }
     .subtitle { font-size: 12px; }
-    .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .card { padding: 10px 12px; }
-    .card .value { font-size: 15px; }
+    .card .value { font-size: 14px; }
     table { font-size: 12px; min-width: 640px; }
     .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
     .chart-controls { flex-wrap: wrap; }
@@ -46,8 +47,8 @@
     .btn { width: 100%; }
   }
   @media (max-width: 380px) {
-    .summary-grid { grid-template-columns: 1fr 1fr; }
-    .card .value { font-size: 14px; }
+    .summary-grid { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+    .card .value { font-size: 13px; }
   }
   h1 { font-size: 20px; margin: 0 0 4px 0; }
   h2 { font-size: 16px; margin: 28px 0 12px 0; }
@@ -65,7 +66,7 @@
     background: var(--bg-soft);
   }
   .card .label { font-size: 12px; color: var(--gray); margin-bottom: 6px; }
-  .card .value { font-size: 18px; font-weight: 700; }
+  .card .value { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
   .card .value.pos { color: var(--green); }
   .card .value.neg { color: var(--red); }
   .note-box {
