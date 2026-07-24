@@ -28,31 +28,6 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
-  @media (max-width: 640px) {
-    body { padding: 14px; font-size: 13px; }
-    h1 { font-size: 17px; }
-    h2 { font-size: 15px; margin: 22px 0 10px 0; }
-    .subtitle { font-size: 12px; }
-    .summary-grid { grid-template-columns: 1fr; gap: 8px; }
-    .card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 14px;
-    }
-    .card .label { margin-bottom: 0; }
-    .card .value { font-size: 16px; white-space: nowrap; overflow-wrap: normal; }
-    table { font-size: 12px; min-width: 640px; }
-    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
-    .chart-controls { flex-wrap: wrap; }
-    .chart-controls .left { flex-wrap: wrap; gap: 6px; }
-    .chart-wrap { height: 240px; }
-    .add-grid { grid-template-columns: 1fr; }
-    .gh-settings-grid { grid-template-columns: 1fr; }
-    .add-actions { flex-direction: column; align-items: flex-start; }
-    .btn { width: 100%; }
-  }
   h1 { font-size: 20px; margin: 0 0 4px 0; }
   h2 { font-size: 16px; margin: 28px 0 12px 0; }
   .subtitle { color: var(--gray); font-size: 13px; margin-bottom: 20px; }
@@ -226,6 +201,27 @@
     border-radius: 6px;
     font-size: 12px;
     box-sizing: border-box;
+  }
+
+  /* Mobile overrides — kept last so they win over the base rules above */
+  @media (max-width: 640px) {
+    body { padding: 14px; font-size: 13px; }
+    h1 { font-size: 17px; }
+    h2 { font-size: 15px; margin: 22px 0 10px 0; }
+    .subtitle { font-size: 12px; }
+    .summary-grid { grid-template-columns: 1fr !important; gap: 8px; }
+    .card { padding: 12px 14px; }
+    .card .label { margin-bottom: 4px; }
+    .card .value { font-size: 17px; white-space: nowrap; overflow-wrap: normal; }
+    table { font-size: 12px; min-width: 640px; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
+    .chart-controls { flex-wrap: wrap; }
+    .chart-controls .left { flex-wrap: wrap; gap: 6px; }
+    .chart-wrap { height: 240px; }
+    .add-grid { grid-template-columns: 1fr !important; }
+    .gh-settings-grid { grid-template-columns: 1fr !important; }
+    .add-actions { flex-direction: column; align-items: flex-start; }
+    .btn { width: 100%; }
   }
 </style>
 </head>
