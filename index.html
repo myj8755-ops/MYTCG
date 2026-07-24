@@ -121,6 +121,70 @@
   }
   footer b { color: #374151; }
   .sort-arrow { font-size: 10px; margin-left: 2px; }
+
+  .add-section {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    background: #fff;
+  }
+  .add-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .add-grid label {
+    display: block;
+    font-size: 12px;
+    color: var(--gray);
+    margin-bottom: 4px;
+  }
+  .add-grid input {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+  .add-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #2563eb;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn:hover { background: #1d4ed8; }
+  .btn.secondary {
+    background: #fff;
+    color: #374151;
+    border: 1px solid var(--border);
+  }
+  .btn.secondary:hover { background: var(--bg-soft); }
+  .add-status { font-size: 12.5px; color: var(--gray); }
+  .add-status.ok { color: var(--green); }
+  .add-status.err { color: var(--red); }
+  details.gh-settings { margin-top: 12px; font-size: 12.5px; }
+  details.gh-settings summary { cursor: pointer; color: var(--gray); }
+  .gh-settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .gh-settings-grid input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    box-sizing: border-box;
+  }
 </style>
 </head>
 <body>
@@ -164,6 +228,47 @@
   </thead>
   <tbody></tbody>
 </table>
+
+<h2>➕ 카드 추가</h2>
+<div class="add-section">
+  <div class="add-grid">
+    <div>
+      <label>카드명</label>
+      <input type="text" id="addName" placeholder="예: 오사카 만자이 피카츄">
+    </div>
+    <div>
+      <label>등급 / 세트정보</label>
+      <input type="text" id="addGrade" placeholder="예: SM-P 407 · PSA10">
+    </div>
+    <div>
+      <label>구매가(원)</label>
+      <input type="number" id="addBuy" placeholder="예: 1350000">
+    </div>
+    <div>
+      <label>현재가(원, 최초값)</label>
+      <input type="number" id="addCur" placeholder="예: 1582840">
+    </div>
+    <div style="grid-column: 1 / -1;">
+      <label>SNKRDUNK 링크</label>
+      <input type="text" id="addUrl" placeholder="https://snkrdunk.com/apparels/...">
+    </div>
+  </div>
+  <div class="add-actions">
+    <button class="btn" id="addSubmit">GitHub에 저장</button>
+    <span class="add-status" id="addStatus"></span>
+  </div>
+  <details class="gh-settings">
+    <summary>GitHub 연결 설정 (최초 1회만 입력하면 저장됩니다)</summary>
+    <div class="gh-settings-grid">
+      <input type="text" id="ghOwner" placeholder="저장소 소유자 (예: myj8755-ops)">
+      <input type="text" id="ghRepo" placeholder="저장소 이름 (예: MYTCG)">
+      <input type="password" id="ghToken" placeholder="Personal Access Token">
+    </div>
+    <div class="grade-tag" style="margin-top:6px">
+      토큰은 이 브라우저에만 저장되고 서버로 전송되지 않습니다(GitHub API에만 직접 사용). GitHub → 우측 상단 프로필 → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 이 저장소만 선택하고 Contents 권한을 Read and write로 발급하세요.
+    </div>
+  </details>
+</div>
 
 <h2>📈 카드별 시세 추이</h2>
 <div class="chart-section">
@@ -345,7 +450,112 @@ function renderSummary() {
   document.getElementById("cardCount").textContent = names.length;
 }
 
+// ---- GitHub 연결 설정 (localStorage에만 저장) ----
+const ghOwnerEl = document.getElementById("ghOwner");
+const ghRepoEl = document.getElementById("ghRepo");
+const ghTokenEl = document.getElementById("ghToken");
+
+function loadGhSettings() {
+  ghOwnerEl.value = localStorage.getItem("gh_owner") || "myj8755-ops";
+  ghRepoEl.value = localStorage.getItem("gh_repo") || "MYTCG";
+  ghTokenEl.value = localStorage.getItem("gh_token") || "";
+}
+[ghOwnerEl, ghRepoEl, ghTokenEl].forEach(el => {
+  el.addEventListener("change", () => {
+    localStorage.setItem("gh_owner", ghOwnerEl.value.trim());
+    localStorage.setItem("gh_repo", ghRepoEl.value.trim());
+    localStorage.setItem("gh_token", ghTokenEl.value.trim());
+  });
+});
+
+function utf8ToB64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+function b64ToUtf8(str) {
+  return decodeURIComponent(escape(atob(str.replace(/\n/g, ""))));
+}
+
+async function addCardToGithub() {
+  const statusEl = document.getElementById("addStatus");
+  statusEl.className = "add-status";
+  statusEl.textContent = "";
+
+  const name = document.getElementById("addName").value.trim();
+  const grade = document.getElementById("addGrade").value.trim();
+  const buy = parseInt(document.getElementById("addBuy").value, 10);
+  const cur = parseInt(document.getElementById("addCur").value, 10);
+  const url = document.getElementById("addUrl").value.trim();
+  const owner = ghOwnerEl.value.trim();
+  const repo = ghRepoEl.value.trim();
+  const token = ghTokenEl.value.trim();
+
+  if (!name || !grade || !url || isNaN(buy) || isNaN(cur)) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = "모든 항목을 채워주세요.";
+    return;
+  }
+  if (!owner || !repo || !token) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = "아래 GitHub 연결 설정을 먼저 입력해주세요.";
+    return;
+  }
+  if (data[name]) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = "이미 같은 이름의 카드가 있습니다.";
+    return;
+  }
+
+  statusEl.textContent = "GitHub에 저장하는 중...";
+
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+  };
+
+  try {
+    const getRes = await fetch(apiUrl, { headers });
+    if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
+    const getJson = await getRes.json();
+    const currentData = JSON.parse(b64ToUtf8(getJson.content));
+
+    const today = new Date().toISOString().slice(0, 10);
+    currentData[name] = { buy, grade, url, series: [[today, cur]] };
+
+    const putRes = await fetch(apiUrl, {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `chore: add card ${name}`,
+        content: utf8ToB64(JSON.stringify(currentData, null, 1)),
+        sha: getJson.sha,
+      }),
+    });
+    if (!putRes.ok) {
+      const errJson = await putRes.json().catch(() => ({}));
+      throw new Error(`저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
+    }
+
+    data = currentData;
+    renderSummary();
+    buildRows();
+    renderTable();
+    buildSelect();
+    renderChart(name);
+
+    statusEl.className = "add-status ok";
+    statusEl.textContent = `"${name}" 카드가 추가됐습니다. 1~2분 뒤 사이트에도 반영됩니다.`;
+    ["addName","addGrade","addBuy","addCur","addUrl"].forEach(id => document.getElementById(id).value = "");
+  } catch (e) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = e.message;
+  }
+}
+
+document.getElementById("addSubmit").addEventListener("click", addCardToGithub);
+
 async function init() {
+  loadGhSettings();
   const res = await fetch("./data.json", { cache: "no-store" });
   data = await res.json();
   renderSummary();
