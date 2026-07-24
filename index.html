@@ -122,6 +122,14 @@
   footer b { color: #374151; }
   .sort-arrow { font-size: 10px; margin-left: 2px; }
 
+  details.add-toggle summary {
+    cursor: pointer;
+    list-style: none;
+    margin: 28px 0 12px 0;
+  }
+  details.add-toggle summary::-webkit-details-marker { display: none; }
+  details.add-toggle summary h2::before { content: "▸ "; font-size: 14px; color: var(--gray); }
+  details.add-toggle[open] summary h2::before { content: "▾ "; }
   .add-section {
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -229,7 +237,8 @@
   <tbody></tbody>
 </table>
 
-<h2>➕ 카드 추가</h2>
+<details class="add-toggle">
+<summary><h2 style="display:inline">➕ 카드 추가</h2></summary>
 <div class="add-section">
   <div class="add-grid">
     <div>
@@ -269,6 +278,7 @@
     </div>
   </details>
 </div>
+</details>
 
 <h2>📈 카드별 시세 추이</h2>
 <div class="chart-section">
