@@ -164,6 +164,18 @@
   }
   table#watchlistTable tbody td:first-child { text-align: left; white-space: normal; }
   table#watchlistTable tbody tr:hover { background: var(--bg-soft); }
+  table#watchlistTable tbody tr[data-wl-name] { cursor: pointer; }
+  table#watchlistTable tbody tr.active-row { background: #eff6ff; }
+  table#watchlistTable tbody tr.active-row:hover { background: #eff6ff; }
+  table#watchlistTable tbody tr.detail-row { cursor: default; }
+  table#watchlistTable tbody tr.detail-row:hover { background: #f0f7ff; }
+  table#watchlistTable tbody tr.detail-row td {
+    white-space: normal;
+    background: #f0f7ff;
+    padding: 16px 18px;
+    border-bottom: 2px solid #bfdbfe;
+    cursor: default;
+  }
   .memo-tag {
     font-size: 11.5px;
     color: #7c3aed;
@@ -258,6 +270,16 @@
     box-sizing: border-box;
     background: #fff;
     color: #111827;
+  }
+  .add-grid textarea {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: vertical;
   }
   .add-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .btn {
@@ -534,6 +556,7 @@
         <th>현재가(관부가세 포함)</th>
         <th>목표가</th>
         <th>목표가 대비</th>
+        <th>PSA10 Pop</th>
         <th>최근 거래일</th>
         <th style="text-align:right">SNKRDUNK</th>
         <th style="text-align:right"></th>
@@ -572,12 +595,20 @@
           <input type="number" id="wlAddTarget" placeholder="예: 2000000">
         </div>
         <div>
+          <label>PSA10 Pop(선택)</label>
+          <input type="number" id="wlAddPop" placeholder="예: 1894">
+        </div>
+        <div>
           <label>메모(선택)</label>
           <input type="text" id="wlAddMemo" placeholder="예: 다음 달 보너스 나오면 구매">
         </div>
         <div style="grid-column: 1 / -1;">
           <label>SNKRDUNK 링크</label>
           <input type="text" id="wlAddUrl" placeholder="https://snkrdunk.com/apparels/...">
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <label>평가(선택, 여러 줄 가능 — 표에서 카드를 클릭하면 여기 내용이 펼쳐져요)</label>
+          <textarea id="wlAddEval" rows="3" placeholder="예: 최근 시세가 계속 내려가는 추세라 좀 더 지켜볼 예정. Pop이 낮아서 장기적으로는 오를 가능성 있어 보임."></textarea>
         </div>
       </div>
       <div class="add-actions">
@@ -966,11 +997,39 @@ function watchlistRows() {
       grade: d.grade,
       url: d.url,
       target: typeof d.targetPrice === "number" ? d.targetPrice : null,
+      pop: typeof d.psa10Pop === "number" ? d.psa10Pop : null,
       memo: d.memo || "",
       cur,
       lastTrade: d.lastTradeDate || "",
+      evaluation: d.evaluation || "",
     };
   });
+}
+
+let expandedWlName = null;
+
+function watchlistDetailRowHtml(r) {
+  return `
+    <tr class="detail-row" data-wl-detail-for="${r.name}">
+      <td colspan="8">
+        <div class="detail-head">
+          <b>${r.name}</b>
+          <span class="grade-tag" style="margin-top:0">${r.grade}</span>
+          <button class="detail-close" data-wl-close-detail aria-label="닫기">✕ 닫기</button>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="dt-label">메모</div>
+            <div class="dt-value">${r.memo || "작성한 메모가 없어요"}</div>
+          </div>
+          <div class="detail-item">
+            <div class="dt-label">평가</div>
+            <div class="dt-value" style="white-space: pre-line">${r.evaluation || "아직 작성한 평가가 없어요. 위 '➕ 후보 카드 추가'에서 삭제 후 다시 추가하거나, GitHub에서 data.json을 직접 편집해 추가할 수 있어요."}</div>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `;
 }
 
 function renderWatchlist() {
@@ -978,8 +1037,12 @@ function renderWatchlist() {
   const rows = watchlistRows();
 
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="watchlist-empty">아직 등록된 후보 카드가 없어요. 아래 "➕ 후보 카드 추가"에서 추가해보세요.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="watchlist-empty">아직 등록된 후보 카드가 없어요. 아래 "➕ 후보 카드 추가"에서 추가해보세요.</div></td></tr>`;
     return;
+  }
+
+  if (expandedWlName && !rows.some(r => r.name === expandedWlName)) {
+    expandedWlName = null;
   }
 
   tbody.innerHTML = rows.map(r => {
@@ -992,8 +1055,8 @@ function renderWatchlist() {
         : `<span class="gap-wait">목표가까지 +${gapPct.toFixed(1)}%</span>`;
     }
 
-    return `
-    <tr>
+    const mainRow = `
+    <tr data-wl-name="${r.name}" class="${r.name === expandedWlName ? 'active-row' : ''}">
       <td>
         <b>${r.name}</b><span class="grade-tag">${r.grade}</span>
         ${r.memo ? `<span class="memo-tag">${r.memo}</span>` : ""}
@@ -1001,14 +1064,38 @@ function renderWatchlist() {
       <td>${r.cur !== null ? won(r.cur) : "아직 시세 없음"}</td>
       <td>${r.target ? won(r.target) : "-"}</td>
       <td>${gapHtml}</td>
+      <td>${r.pop !== null ? r.pop.toLocaleString("ko-KR") + "장" : "-"}</td>
       <td>${formatLastTrade(r.lastTrade)}</td>
-      <td>${r.url ? `<a class="snkrdunk-link" href="${r.url}" target="_blank" rel="noopener">보기 →</a>` : "-"}</td>
-      <td><button class="del-link" data-wl-del="${r.name}">삭제</button></td>
+      <td>${r.url ? `<a class="snkrdunk-link" href="${r.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">보기 →</a>` : "-"}</td>
+      <td><button class="del-link" data-wl-del="${r.name}" onclick="event.stopPropagation()">삭제</button></td>
     </tr>`;
+    const detail = r.name === expandedWlName ? watchlistDetailRowHtml(r) : "";
+    return mainRow + detail;
   }).join("");
 
+  tbody.querySelectorAll("tr[data-wl-name]").forEach(tr => {
+    tr.addEventListener("click", () => {
+      const name = tr.dataset.wlName;
+      expandedWlName = expandedWlName === name ? null : name;
+      renderWatchlist();
+      if (expandedWlName) {
+        const opened = document.querySelector(`tr.detail-row[data-wl-detail-for="${CSS.escape(expandedWlName)}"]`);
+        if (opened) opened.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    });
+  });
+  tbody.querySelectorAll("[data-wl-close-detail]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      expandedWlName = null;
+      renderWatchlist();
+    });
+  });
   tbody.querySelectorAll("[data-wl-del]").forEach(btn => {
-    btn.addEventListener("click", () => deleteCandidateFromGithub(btn.dataset.wlDel));
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteCandidateFromGithub(btn.dataset.wlDel);
+    });
   });
 }
 
@@ -1023,7 +1110,9 @@ async function addCandidateToGithub() {
   const grade = gradeChoice === "기타" ? setInfo : (setInfo ? `${setInfo} · ${gradeChoice}` : gradeChoice);
   const url = document.getElementById("wlAddUrl").value.trim();
   const targetRaw = document.getElementById("wlAddTarget").value;
+  const popRaw = document.getElementById("wlAddPop").value;
   const memo = document.getElementById("wlAddMemo").value.trim();
+  const evaluation = document.getElementById("wlAddEval").value.trim();
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
@@ -1061,7 +1150,9 @@ async function addCandidateToGithub() {
     if (!currentData._watchlist) currentData._watchlist = {};
     const entry = { grade, url, series: [] };
     if (targetRaw) entry.targetPrice = parseInt(targetRaw, 10);
+    if (popRaw) entry.psa10Pop = parseInt(popRaw, 10);
     if (memo) entry.memo = memo;
+    if (evaluation) entry.evaluation = evaluation;
     currentData._watchlist[name] = entry;
 
     const putRes = await fetch(apiUrl, {
@@ -1083,7 +1174,7 @@ async function addCandidateToGithub() {
 
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 후보 카드가 추가됐습니다. 다음 자동 갱신 때 시세가 채워집니다.`;
-    ["wlAddName", "wlAddGrade", "wlAddTarget", "wlAddMemo", "wlAddUrl"].forEach(id => document.getElementById(id).value = "");
+    ["wlAddName", "wlAddGrade", "wlAddTarget", "wlAddPop", "wlAddMemo", "wlAddUrl", "wlAddEval"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("wlAddGradeSelect").value = "PSA10";
   } catch (e) {
     statusEl.className = "add-status err";
