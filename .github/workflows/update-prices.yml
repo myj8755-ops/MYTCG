@@ -1,7 +1,7 @@
 name: Update TCG prices
 on:
   schedule:
-    - cron: "0 * * * *"  # 매시 정각 (테스트용, 확인 후 하루 1회로 되돌릴 예정)
+    - cron: "7 * * * *"  # 매시 7분 (정각 혼잡 피하기 위한 테스트)
   workflow_dispatch: {}    # Actions 탭에서 수동 실행 버튼도 사용 가능
 concurrency:
   group: ${{ github.workflow }}
