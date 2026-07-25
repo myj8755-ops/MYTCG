@@ -502,22 +502,41 @@ function pct(n) {
   return s + n.toFixed(1) + "%";
 }
 
-// lastTrade: "YYYY-MM-DD" 형식의 ISO 날짜 문자열 (scrape.mjs가 SNKRDUNK의
-// "18시간 전" / "1일 전" / "2026/07/20" 표기를 변환해 저장한 값)
-function formatLastTrade(iso) {
-  if (!iso) return `<span class="last-trade-cell">정보없음</span>`;
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const tradeDate = new Date(iso + "T00:00:00Z");
-  const diffDays = Math.round((new Date(todayStr + "T00:00:00Z") - tradeDate) / 86400000);
+// lastTrade: scrape.mjs가 저장한 값.
+// 시/분 단위 상대 계산이 가능한 전체 ISO datetime("2026-07-25T04:12:00.000Z")이거나,
+// 시각 정보가 없는 절대 날짜만("YYYY-MM-DD")일 수 있음.
+function formatLastTrade(value) {
+  if (!value) return `<span class="last-trade-cell">정보없음</span>`;
 
-  let label;
-  if (diffDays <= 0) label = "오늘";
-  else if (diffDays === 1) label = "어제";
-  else if (diffDays <= 30) label = `${diffDays}일 전`;
-  else label = iso;
+  const now = new Date();
+  let label, diffDaysForStale;
 
-  const staleClass = diffDays >= 7 ? "stale" : "";
+  if (value.includes("T")) {
+    const tradeDate = new Date(value);
+    const diffMs = now - tradeDate;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHr = Math.floor(diffMs / 3600000);
+    const diffDay = Math.floor(diffMs / 86400000);
+    diffDaysForStale = diffDay;
+
+    if (diffMs < 60 * 1000) label = "방금 전";
+    else if (diffMin < 60) label = `${diffMin}분 전`;
+    else if (diffHr < 24) label = `${diffHr}시간 전`;
+    else if (diffDay <= 30) label = `${diffDay}일 전`;
+    else label = tradeDate.toISOString().slice(0, 10);
+  } else {
+    const todayStr = now.toISOString().slice(0, 10);
+    const tradeDate = new Date(value + "T00:00:00Z");
+    const diffDay = Math.round((new Date(todayStr + "T00:00:00Z") - tradeDate) / 86400000);
+    diffDaysForStale = diffDay;
+
+    if (diffDay <= 0) label = "오늘";
+    else if (diffDay === 1) label = "어제";
+    else if (diffDay <= 30) label = `${diffDay}일 전`;
+    else label = value;
+  }
+
+  const staleClass = diffDaysForStale >= 7 ? "stale" : "";
   return `<span class="last-trade-cell ${staleClass}">${label}</span>`;
 }
 
