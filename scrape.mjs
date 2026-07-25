@@ -43,36 +43,38 @@ function extractLatestPsa10(pageText) {
   return null;
 }
 
-// "18시간 전" / "1일 전" / "2026/07/20" 형식의 텍스트를 "YYYY-MM-DD" ISO 날짜로 변환.
-// 상대 표현(시간 전/분 전/방금)은 오늘 날짜로, "N일 전"은 오늘에서 N일을 뺀 날짜로 계산.
+// "18시간 전" / "45분 전" / "1일 전" / "2026/07/20" 형식의 텍스트를 실제 시각으로 변환.
+// 시간/분/일 단위 상대 표현은 정확한 시각(ISO datetime)으로, 절대 날짜("YYYY/MM/DD")는
+// 정확한 시각을 알 수 없어 날짜만("YYYY-MM-DD") 저장한다.
+// 한국어("N분 전" 등)와 일본어("N分前" 등) 로케일을 모두 지원.
 function parseTradeDateText(dateText, now = new Date()) {
   const text = dateText.trim();
 
-  if (/시간\s*전$/.test(text) || /분\s*전$/.test(text) || /방금/.test(text)) {
-    return now.toISOString().slice(0, 10);
+  if (/^방금(\s*전)?$/.test(text) || /たった今/.test(text)) {
+    return now.toISOString();
   }
 
-  const dayAgoMatch = text.match(/^(\d+)\s*일\s*전$/);
-  if (dayAgoMatch) {
-    const d = new Date(now);
-    d.setUTCDate(d.getUTCDate() - parseInt(dayAgoMatch[1], 10));
-    return d.toISOString().slice(0, 10);
+  let m = text.match(/^(\d+)\s*분\s*전$/) || text.match(/^(\d+)分前$/);
+  if (m) {
+    const mins = parseInt(m[1], 10);
+    return new Date(now.getTime() - mins * 60 * 1000).toISOString();
   }
 
-  const absMatch = text.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
-  if (absMatch) {
-    return `${absMatch[1]}-${absMatch[2]}-${absMatch[3]}`;
+  m = text.match(/^(\d+)\s*시간\s*전$/) || text.match(/^(\d+)時間前$/);
+  if (m) {
+    const hrs = parseInt(m[1], 10);
+    return new Date(now.getTime() - hrs * 60 * 60 * 1000).toISOString();
   }
 
-  // 일본어 로케일 대비 ("時間前", "日前" 등)도 함께 지원
-  if (/時間前$/.test(text) || /分前$/.test(text) || /たった今/.test(text)) {
-    return now.toISOString().slice(0, 10);
+  m = text.match(/^(\d+)\s*일\s*전$/) || text.match(/^(\d+)日前$/);
+  if (m) {
+    const days = parseInt(m[1], 10);
+    return new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
   }
-  const jpDayAgoMatch = text.match(/^(\d+)日前$/);
-  if (jpDayAgoMatch) {
-    const d = new Date(now);
-    d.setUTCDate(d.getUTCDate() - parseInt(jpDayAgoMatch[1], 10));
-    return d.toISOString().slice(0, 10);
+
+  m = text.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+  if (m) {
+    return `${m[1]}-${m[2]}-${m[3]}`; // 시각 정보 없음, 날짜만 저장
   }
 
   console.warn(`[warn] 거래일 텍스트를 해석하지 못함: "${text}"`);
