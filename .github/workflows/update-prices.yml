@@ -1,6 +1,6 @@
 name: Update TCG prices
 on:
-  schedule:
+ schedule:
     - cron: "7 * * * *"  # 매시 7분 (정각 혼잡 피하기 위한 테스트)
   workflow_dispatch: {}    # Actions 탭에서 수동 실행 버튼도 사용 가능
 concurrency:
@@ -24,6 +24,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run scraper
         run: node scrape.mjs
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - name: Pull latest changes before commit
         run: |
           git stash --include-untracked
