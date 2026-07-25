@@ -32,6 +32,48 @@
   h1 { font-size: 20px; margin: 0 0 4px 0; }
   h2 { font-size: 16px; margin: 28px 0 12px 0; }
   .subtitle { color: var(--gray); font-size: 13px; margin-bottom: 20px; }
+  .header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .btn-refresh {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: #374151;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-refresh:hover { background: var(--bg-soft); }
+  .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-refresh .spin {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #d1d5db;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .refresh-status {
+    font-size: 11.5px;
+    color: var(--gray);
+    margin-top: 4px;
+    text-align: right;
+  }
+  .refresh-status.ok { color: var(--green); }
+  .refresh-status.err { color: var(--red); }
+  .refresh-status .timer { font-weight: 700; color: #2563eb; font-variant-numeric: tabular-nums; }
   .summary-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -107,7 +149,6 @@
     background: #fff;
   }
   .chart-stats { font-size: 12.5px; color: var(--gray); }
-  .chart-stats b { color: #111827; }
   .chart-wrap { position: relative; height: 320px; }
   footer {
     margin-top: 24px;
@@ -280,6 +321,9 @@
     h1 { font-size: 17px; }
     h2 { font-size: 15px; margin: 22px 0 10px 0; }
     .subtitle { font-size: 12px; }
+    .header-row { flex-direction: column; align-items: stretch; }
+    .header-row > div:last-child { text-align: right; }
+    .btn-refresh { width: 100%; justify-content: center; }
     .summary-grid { grid-template-columns: 1fr !important; gap: 8px; }
     .card { padding: 12px 14px; }
     .card .label { margin-bottom: 4px; }
@@ -299,8 +343,16 @@
 </head>
 <body>
 
-<h1>🎴 포켓몬 카드 포트폴리오</h1>
-<div class="subtitle">보유 카드 <span id="cardCount">-</span>종 · SNKRDUNK(스니커덩크) PSA10 최신 거래가 + 관부가세 10% 반영 · 최종 갱신: <span id="lastUpdated">-</span></div>
+<div class="header-row">
+  <div>
+    <h1>🎴 포켓몬 카드 포트폴리오</h1>
+    <div class="subtitle">보유 카드 <span id="cardCount">-</span>종 · SNKRDUNK(스니커덩크) PSA10 최신 거래가 + 관부가세 10% 반영 · 최종 갱신: <span id="lastUpdated">-</span></div>
+  </div>
+  <div>
+    <button class="btn-refresh" id="refreshBtn">🔄 지금 업데이트</button>
+    <div class="refresh-status" id="refreshStatus"></div>
+  </div>
+</div>
 
 <div class="summary-grid">
   <div class="card">
@@ -388,7 +440,7 @@
       <input type="password" id="ghToken" placeholder="Personal Access Token">
     </div>
     <div class="grade-tag" style="margin-top:6px">
-      토큰은 이 브라우저에만 저장되고 서버로 전송되지 않습니다(GitHub API에만 직접 사용). GitHub → 우측 상단 프로필 → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 이 저장소만 선택하고 Contents 권한을 Read and write로 발급하세요.
+      토큰은 이 브라우저에만 저장되고 서버로 전송되지 않습니다(GitHub API에만 직접 사용). GitHub → 우측 상단 프로필 → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 이 저장소만 선택하고 Contents 권한과 Actions 권한을 모두 Read and write로 발급하세요.
     </div>
   </details>
 </div>
@@ -935,6 +987,139 @@ async function saveOrderToGithub(newNames) {
   }
 }
 
+// ---- 수동 업데이트 버튼: GitHub Actions 스크래핑 워크플로우 즉시 실행 + 실시간 카운터 ----
+const refreshBtn = document.getElementById("refreshBtn");
+const refreshStatus = document.getElementById("refreshStatus");
+const WORKFLOW_FILE = "update-prices.yml"; // .github/workflows/ 안의 실제 파일명과 다르면 이 값을 바꿔주세요
+
+let refreshTimerInterval = null;
+let refreshPollInterval = null;
+let refreshStartTime = null;
+
+function formatElapsed(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+
+function stopRefreshTimers() {
+  if (refreshTimerInterval) { clearInterval(refreshTimerInterval); refreshTimerInterval = null; }
+  if (refreshPollInterval) { clearInterval(refreshPollInterval); refreshPollInterval = null; }
+}
+
+refreshBtn.addEventListener("click", async () => {
+  const owner = ghOwnerEl.value.trim();
+  const repo = ghRepoEl.value.trim();
+  const token = ghTokenEl.value.trim();
+
+  if (!owner || !repo || !token) {
+    document.querySelector("details.add-toggle").open = true;
+    refreshStatus.className = "refresh-status err";
+    refreshStatus.textContent = "먼저 아래 GitHub 연결 설정을 입력해주세요.";
+    return;
+  }
+
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+  };
+
+  refreshBtn.disabled = true;
+  refreshBtn.innerHTML = '<span class="spin"></span> 업데이트 중';
+  refreshStatus.className = "refresh-status";
+  refreshStatus.innerHTML = `실행 요청 중... <span class="timer">00:00</span>`;
+
+  const dispatchTime = new Date();
+  refreshStartTime = Date.now();
+
+  // 1초마다 경과 시간 표시 갱신
+  refreshTimerInterval = setInterval(() => {
+    const el = refreshStatus.querySelector(".timer");
+    if (el) el.textContent = formatElapsed(Date.now() - refreshStartTime);
+  }, 1000);
+
+  try {
+    const dispatchRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
+      { method: "POST", headers, body: JSON.stringify({ ref: "main" }) }
+    );
+    if (dispatchRes.status !== 204) {
+      const err = await dispatchRes.json().catch(() => ({}));
+      throw new Error(`실행 요청 실패 (${dispatchRes.status}): ${err.message || "알 수 없는 오류"}`);
+    }
+
+    refreshStatus.innerHTML = `업데이트 진행 중... <span class="timer">00:00</span> (보통 2~3분 소요)`;
+
+    // 5초마다 워크플로우 실행 상태를 폴링해서, 완료되면 최신 data.json을 다시 불러옴
+    let matchedRunId = null;
+    refreshPollInterval = setInterval(async () => {
+      try {
+        const runsRes = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_FILE}/runs?event=workflow_dispatch&per_page=5`,
+          { headers }
+        );
+        if (!runsRes.ok) return;
+        const runsJson = await runsRes.json();
+        const runs = runsJson.workflow_runs || [];
+
+        if (!matchedRunId) {
+          const candidate = runs.find(r => new Date(r.created_at) >= new Date(dispatchTime.getTime() - 5000));
+          if (candidate) matchedRunId = candidate.id;
+        }
+        if (!matchedRunId) return;
+
+        const run = runs.find(r => r.id === matchedRunId);
+        if (!run) return;
+
+        if (run.status === "completed") {
+          stopRefreshTimers();
+          const elapsed = formatElapsed(Date.now() - refreshStartTime);
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = "🔄 지금 업데이트";
+
+          if (run.conclusion === "success") {
+            const res = await fetch("./data.json", { cache: "no-store" });
+            data = await res.json();
+            renderSummary();
+            buildRows();
+            renderTable();
+            buildSelect();
+            const first = cardNames(data)[0];
+            if (first) renderChart(document.getElementById("cardSelect").value || first);
+
+            refreshStatus.className = "refresh-status ok";
+            refreshStatus.textContent = `업데이트 완료! (${elapsed} 소요)`;
+          } else {
+            refreshStatus.className = "refresh-status err";
+            refreshStatus.textContent = `업데이트 실패 (${run.conclusion}) — Actions 탭에서 로그를 확인해주세요. (${elapsed} 경과)`;
+          }
+        }
+      } catch (e) {
+        // 폴링 중 일시적 오류는 무시하고 다음 주기에 재시도
+      }
+    }, 5000);
+
+    // 8분 넘게 안 끝나면 폴링을 그만두고 안내만 표시 (무한 대기 방지)
+    setTimeout(() => {
+      if (refreshPollInterval) {
+        stopRefreshTimers();
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = "🔄 지금 업데이트";
+        refreshStatus.className = "refresh-status err";
+        refreshStatus.textContent = "시간이 오래 걸리고 있어요. Actions 탭에서 직접 확인해주세요.";
+      }
+    }, 8 * 60 * 1000);
+
+  } catch (e) {
+    stopRefreshTimers();
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "🔄 지금 업데이트";
+    refreshStatus.className = "refresh-status err";
+    refreshStatus.textContent = e.message;
+  }
+});
+
 async function init() {
   loadGhSettings();
   const res = await fetch("./data.json", { cache: "no-store" });
@@ -951,7 +1136,7 @@ init();
 <footer>
   <b>데이터 출처</b>: SNKRDUNK(스니커덩크) 각 카드 상세 페이지의 매매이력(売買履歴), PSA10·1장 거래만 집계.<br>
   <b>환산 방식</b>: 엔화 거래가 × 환율(자동 조회) × 1.10(관부가세) = 한국에서 실제 구매 시 드는 비용 기준.<br>
-  <b>갱신 방법</b>: GitHub Actions가 매일 자동으로 스니커덩크를 조회해 data.json을 갱신합니다. Actions 탭에서 수동 실행도 가능합니다.
+  <b>갱신 방법</b>: GitHub Actions가 매일 자동으로 스니커덩크를 조회해 data.json을 갱신합니다. 우측 상단 "지금 업데이트" 버튼으로 즉시 실행하거나, Actions 탭에서 수동 실행도 가능합니다.
 </footer>
 
 </body>
