@@ -125,6 +125,15 @@
   .pos { color: var(--green); font-weight: 600; }
   .neg { color: var(--red); font-weight: 600; }
   .grade-tag { font-size: 11px; color: var(--gray); display: block; margin-top: 2px; }
+  .stack-cell { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.5; }
+  .stack-top { font-size: 12px; color: var(--gray); }
+  .stack-bottom { font-size: 13px; font-weight: 700; color: #111827; }
+  .stack-bottom.pos { color: var(--green); }
+  .stack-bottom.neg { color: var(--red); }
+  .stack-sub { font-size: 11.5px; font-weight: 600; margin-left: 4px; }
+  .th-stack { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.5; gap: 1px; }
+  .th-stack .th-top { font-size: 11.5px; color: #6b7280; font-weight: 600; }
+  .th-stack .th-bottom { font-size: 12px; color: #374151; font-weight: 700; }
   .chart-section {
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -389,10 +398,8 @@
   <thead>
     <tr>
       <th data-key="name" style="text-align:left">카드명<span class="sort-arrow"></span></th>
-      <th data-key="buy">구매가<span class="sort-arrow"></span></th>
-      <th data-key="cur">현재가(관부가세 포함)<span class="sort-arrow"></span></th>
-      <th data-key="diff">손익액<span class="sort-arrow"></span></th>
-      <th data-key="rate">수익률<span class="sort-arrow"></span></th>
+      <th data-key="cur"><div class="th-stack"><span class="th-top">구매가</span><span class="th-bottom">현재가(관부가세 포함)</span></div><span class="sort-arrow"></span></th>
+      <th data-key="diff"><div class="th-stack"><span class="th-top">수익률</span><span class="th-bottom">손익액</span></div><span class="sort-arrow"></span></th>
       <th data-key="pop">PSA10 Pop<span class="sort-arrow"></span></th>
       <th style="text-align:right">SNKRDUNK</th>
       <th class="order-col" style="text-align:center; display:none">순서</th>
@@ -520,7 +527,7 @@ function detailRowHtml(name) {
   ];
   return `
     <tr class="detail-row" data-detail-for="${name}">
-      <td colspan="9">
+      <td colspan="7">
         <div class="detail-head">
           <b>${name}</b>
           <span class="grade-tag" style="margin-top:0">${d.grade}</span>
@@ -554,10 +561,17 @@ function renderTable() {
     const mainRow = `
     <tr data-name="${r.name}" class="${r.name === expandedName ? 'active-row' : ''}">
       <td><b>${r.name}</b><span class="grade-tag">${r.grade}</span></td>
-      <td>${won(r.buy)}</td>
-      <td>${won(r.cur)}</td>
-      <td class="${r.diff >= 0 ? 'pos' : 'neg'}">${signedWon(r.diff)}</td>
-      <td class="${r.rate >= 0 ? 'pos' : 'neg'}">${pct(r.rate)}</td>
+      <td>
+        <div class="stack-cell">
+          <span class="stack-top">${won(r.buy)}</span>
+          <span class="stack-bottom">→ ${won(r.cur)}</span>
+        </div>
+      </td>
+      <td>
+        <div class="stack-cell">
+          <span class="stack-bottom ${r.diff >= 0 ? 'pos' : 'neg'}">${signedWon(r.diff)}<span class="stack-sub ${r.rate >= 0 ? 'pos' : 'neg'}">(${pct(r.rate)})</span></span>
+        </div>
+      </td>
       <td>${r.pop !== null ? r.pop.toLocaleString("ko-KR") + "장" : "-"}</td>
       <td><a class="snkrdunk-link" href="${data[r.name].url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">보기 →</a></td>
       <td class="order-cell" style="${orderCellStyle}">
@@ -1089,7 +1103,17 @@ refreshBtn.addEventListener("click", async () => {
             if (first) renderChart(document.getElementById("cardSelect").value || first);
 
             refreshStatus.className = "refresh-status ok";
-            refreshStatus.textContent = `업데이트 완료! (${elapsed} 소요)`;
+            let countdown = 3;
+            refreshStatus.innerHTML = `업데이트 완료! (${elapsed} 소요) · <span class="timer">${countdown}초</span> 후 새로고침...`;
+            const countdownInterval = setInterval(() => {
+              countdown -= 1;
+              const el = refreshStatus.querySelector(".timer");
+              if (el) el.textContent = `${countdown}초`;
+              if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                location.reload();
+              }
+            }, 1000);
           } else {
             refreshStatus.className = "refresh-status err";
             refreshStatus.textContent = `업데이트 실패 (${run.conclusion}) — Actions 탭에서 로그를 확인해주세요. (${elapsed} 경과)`;
