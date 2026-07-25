@@ -135,6 +135,61 @@
   .stack-sub { font-size: 11.5px; font-weight: 600; margin-left: 4px; }
   .last-trade-cell { font-size: 12.5px; color: var(--gray); }
   .last-trade-cell.stale { color: #b45309; }
+
+  .watchlist-section {
+    margin-top: 32px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    background: #fff;
+  }
+  .watchlist-section h2 { margin: 0 0 4px 0; }
+  .watchlist-sub { color: var(--gray); font-size: 12.5px; margin-bottom: 14px; }
+  table#watchlistTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table#watchlistTable thead th {
+    text-align: right;
+    padding: 8px 10px;
+    border-bottom: 2px solid #111827;
+    background: #fff;
+    white-space: nowrap;
+    font-size: 12px;
+    color: #374151;
+  }
+  table#watchlistTable thead th:first-child { text-align: left; }
+  table#watchlistTable tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    white-space: nowrap;
+  }
+  table#watchlistTable tbody td:first-child { text-align: left; white-space: normal; }
+  table#watchlistTable tbody tr:hover { background: var(--bg-soft); }
+  .memo-tag {
+    font-size: 11.5px;
+    color: #7c3aed;
+    background: #f5f3ff;
+    border-radius: 6px;
+    padding: 2px 8px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+  .gap-hit { color: var(--green); font-weight: 700; }
+  .gap-wait { color: var(--gray); }
+  .watchlist-empty { color: var(--gray); font-size: 13px; padding: 16px 0; text-align: center; }
+  table#watchlistTable tbody td.ai-cell { white-space: normal; text-align: left; max-width: 220px; }
+  .ai-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 999px;
+  }
+  .ai-cheap { background: #dcfce7; color: #15803d; }
+  .ai-fair { background: #e0e7ff; color: #4338ca; }
+  .ai-expensive { background: #fee2e2; color: #b91c1c; }
+  .ai-none { background: #f3f4f6; color: #6b7280; }
+  .ai-comment { font-size: 12px; color: #374151; margin-top: 5px; line-height: 1.5; }
+  .ai-ago { font-size: 10.5px; color: var(--gray); margin-top: 3px; }
   .th-stack { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.5; gap: 1px; }
   .th-stack .th-top { font-size: 11.5px; color: #6b7280; font-weight: 600; }
   .th-stack .th-bottom { font-size: 12px; color: #374151; font-weight: 700; }
@@ -351,6 +406,8 @@
     .gh-settings-grid { grid-template-columns: 1fr !important; }
     .add-actions { flex-direction: column; align-items: flex-start; }
     .btn { width: 100%; }
+    table#watchlistTable { font-size: 12px; min-width: 620px; }
+    .watchlist-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
   }
 </style>
 </head>
@@ -458,6 +515,60 @@
 </div>
 </details>
 
+<div class="watchlist-section">
+  <h2>🎯 관심 후보 카드</h2>
+  <div class="watchlist-sub">아직 안 산, 사고 싶은 카드들을 여기 따로 적어두세요. 시세는 보유 카드와 똑같이 매일 자동 갱신됩니다. 손익 계산에는 포함되지 않아요.</div>
+  <div class="watchlist-scroll">
+  <table id="watchlistTable">
+    <thead>
+      <tr>
+        <th style="text-align:left">카드명</th>
+        <th>현재가(관부가세 포함)</th>
+        <th>목표가</th>
+        <th>목표가 대비</th>
+        <th>AI 평가</th>
+        <th>최근 거래일</th>
+        <th style="text-align:right">SNKRDUNK</th>
+        <th style="text-align:right"></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  </div>
+
+  <details class="add-toggle" style="margin-top:20px">
+    <summary><h2 style="display:inline; font-size:15px">➕ 후보 카드 추가</h2></summary>
+    <div class="add-section">
+      <div class="add-grid">
+        <div>
+          <label>카드명</label>
+          <input type="text" id="wlAddName" placeholder="예: 요코하마 삼총사">
+        </div>
+        <div>
+          <label>등급 / 세트정보</label>
+          <input type="text" id="wlAddGrade" placeholder="예: SM-P 282 · PSA10">
+        </div>
+        <div>
+          <label>목표 매수가(원, 선택)</label>
+          <input type="number" id="wlAddTarget" placeholder="예: 2000000">
+        </div>
+        <div>
+          <label>메모(선택)</label>
+          <input type="text" id="wlAddMemo" placeholder="예: 다음 달 보너스 나오면 구매">
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <label>SNKRDUNK 링크</label>
+          <input type="text" id="wlAddUrl" placeholder="https://snkrdunk.com/apparels/...">
+        </div>
+      </div>
+      <div class="add-actions">
+        <button class="btn" id="wlAddSubmit">GitHub에 저장</button>
+        <span class="add-status" id="wlAddStatus"></span>
+      </div>
+    </div>
+  </details>
+</div>
+
 <h2>📈 카드별 시세 추이</h2>
 <div class="chart-section">
   <div class="chart-controls">
@@ -475,7 +586,11 @@
 let data = {};
 
 function cardNames(d) {
-  return Object.keys(d).filter(k => k !== "_meta");
+  return Object.keys(d).filter(k => k !== "_meta" && k !== "_watchlist");
+}
+
+function watchlistNames(d) {
+  return Object.keys(d._watchlist || {});
 }
 
 function formatUpdatedAt(iso) {
@@ -502,14 +617,11 @@ function pct(n) {
   return s + n.toFixed(1) + "%";
 }
 
-// lastTrade: scrape.mjs가 저장한 값.
-// 시/분 단위 상대 계산이 가능한 전체 ISO datetime("2026-07-25T04:12:00.000Z")이거나,
-// 시각 정보가 없는 절대 날짜만("YYYY-MM-DD")일 수 있음.
-function formatLastTrade(value) {
-  if (!value) return `<span class="last-trade-cell">정보없음</span>`;
-
+// value가 전체 ISO datetime("...T...")이면 시/분 단위까지, 날짜만("YYYY-MM-DD")이면
+// 일 단위까지 상대 시간을 계산해서 { label, days } 형태로 반환.
+function timeAgoLabel(value) {
+  if (!value) return null;
   const now = new Date();
-  let label, diffDaysForStale;
 
   if (value.includes("T")) {
     const tradeDate = new Date(value);
@@ -517,27 +629,30 @@ function formatLastTrade(value) {
     const diffMin = Math.floor(diffMs / 60000);
     const diffHr = Math.floor(diffMs / 3600000);
     const diffDay = Math.floor(diffMs / 86400000);
-    diffDaysForStale = diffDay;
 
-    if (diffMs < 60 * 1000) label = "방금 전";
-    else if (diffMin < 60) label = `${diffMin}분 전`;
-    else if (diffHr < 24) label = `${diffHr}시간 전`;
-    else if (diffDay <= 30) label = `${diffDay}일 전`;
-    else label = tradeDate.toISOString().slice(0, 10);
-  } else {
-    const todayStr = now.toISOString().slice(0, 10);
-    const tradeDate = new Date(value + "T00:00:00Z");
-    const diffDay = Math.round((new Date(todayStr + "T00:00:00Z") - tradeDate) / 86400000);
-    diffDaysForStale = diffDay;
-
-    if (diffDay <= 0) label = "오늘";
-    else if (diffDay === 1) label = "어제";
-    else if (diffDay <= 30) label = `${diffDay}일 전`;
-    else label = value;
+    if (diffMs < 60 * 1000) return { label: "방금 전", days: 0 };
+    if (diffMin < 60) return { label: `${diffMin}분 전`, days: 0 };
+    if (diffHr < 24) return { label: `${diffHr}시간 전`, days: 0 };
+    if (diffDay <= 30) return { label: `${diffDay}일 전`, days: diffDay };
+    return { label: tradeDate.toISOString().slice(0, 10), days: diffDay };
   }
 
-  const staleClass = diffDaysForStale >= 7 ? "stale" : "";
-  return `<span class="last-trade-cell ${staleClass}">${label}</span>`;
+  const todayStr = now.toISOString().slice(0, 10);
+  const tradeDate = new Date(value + "T00:00:00Z");
+  const diffDay = Math.round((new Date(todayStr + "T00:00:00Z") - tradeDate) / 86400000);
+  let label;
+  if (diffDay <= 0) label = "오늘";
+  else if (diffDay === 1) label = "어제";
+  else if (diffDay <= 30) label = `${diffDay}일 전`;
+  else label = value;
+  return { label, days: diffDay };
+}
+
+function formatLastTrade(value) {
+  const info = timeAgoLabel(value);
+  if (!info) return `<span class="last-trade-cell">정보없음</span>`;
+  const staleClass = info.days >= 7 ? "stale" : "";
+  return `<span class="last-trade-cell ${staleClass}">${info.label}</span>`;
 }
 
 let rows = [];
@@ -820,6 +935,215 @@ function utf8ToB64(str) {
 }
 function b64ToUtf8(str) {
   return decodeURIComponent(escape(atob(str.replace(/\n/g, ""))));
+}
+
+// ---- 관심 후보 카드 (워치리스트) ----
+function watchlistRows() {
+  return watchlistNames(data).map(name => {
+    const d = data._watchlist[name];
+    const cur = d.series && d.series.length ? d.series[d.series.length - 1][1] : null;
+    return {
+      name,
+      grade: d.grade,
+      url: d.url,
+      target: typeof d.targetPrice === "number" ? d.targetPrice : null,
+      memo: d.memo || "",
+      cur,
+      lastTrade: d.lastTradeDate || "",
+      evaluation: d.aiEvaluation || null,
+    };
+  });
+}
+
+function renderWatchlist() {
+  const tbody = document.querySelector("#watchlistTable tbody");
+  const rows = watchlistRows();
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="watchlist-empty">아직 등록된 후보 카드가 없어요. 아래 "➕ 후보 카드 추가"에서 추가해보세요.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    let gapHtml = "-";
+    if (r.target && r.cur !== null) {
+      const gapDiff = r.cur - r.target;
+      const gapPct = (gapDiff / r.target) * 100;
+      gapHtml = gapDiff <= 0
+        ? `<span class="gap-hit">목표가 도달! (${pct(gapPct)})</span>`
+        : `<span class="gap-wait">목표가까지 +${gapPct.toFixed(1)}%</span>`;
+    }
+
+    let aiHtml = `<span class="ai-badge ai-none">평가 전</span>`;
+    if (r.evaluation) {
+      const verdict = r.evaluation.verdict;
+      const cls = verdict === "저평가" ? "ai-cheap" : verdict === "고평가" ? "ai-expensive" : "ai-fair";
+      const ago = timeAgoLabel(r.evaluation.evaluatedAt);
+      aiHtml = `
+        <span class="ai-badge ${cls}">${verdict}</span>
+        <div class="ai-comment">${r.evaluation.comment}</div>
+        ${ago ? `<div class="ai-ago">${ago.label} 평가</div>` : ""}
+      `;
+    }
+
+    return `
+    <tr>
+      <td>
+        <b>${r.name}</b><span class="grade-tag">${r.grade}</span>
+        ${r.memo ? `<span class="memo-tag">${r.memo}</span>` : ""}
+      </td>
+      <td>${r.cur !== null ? won(r.cur) : "아직 시세 없음"}</td>
+      <td>${r.target ? won(r.target) : "-"}</td>
+      <td>${gapHtml}</td>
+      <td class="ai-cell">${aiHtml}</td>
+      <td>${formatLastTrade(r.lastTrade)}</td>
+      <td>${r.url ? `<a class="snkrdunk-link" href="${r.url}" target="_blank" rel="noopener">보기 →</a>` : "-"}</td>
+      <td><button class="del-link" data-wl-del="${r.name}">삭제</button></td>
+    </tr>`;
+  }).join("");
+
+  tbody.querySelectorAll("[data-wl-del]").forEach(btn => {
+    btn.addEventListener("click", () => deleteCandidateFromGithub(btn.dataset.wlDel));
+  });
+}
+
+async function addCandidateToGithub() {
+  const statusEl = document.getElementById("wlAddStatus");
+  statusEl.className = "add-status";
+  statusEl.textContent = "";
+
+  const name = document.getElementById("wlAddName").value.trim();
+  const grade = document.getElementById("wlAddGrade").value.trim();
+  const url = document.getElementById("wlAddUrl").value.trim();
+  const targetRaw = document.getElementById("wlAddTarget").value;
+  const memo = document.getElementById("wlAddMemo").value.trim();
+  const owner = ghOwnerEl.value.trim();
+  const repo = ghRepoEl.value.trim();
+  const token = ghTokenEl.value.trim();
+
+  if (!name || !grade || !url) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = "카드명·등급·SNKRDUNK 링크는 필수예요.";
+    return;
+  }
+  if (!owner || !repo || !token) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = "아래 GitHub 연결 설정을 먼저 입력해주세요.";
+    return;
+  }
+  if (data._watchlist && data._watchlist[name]) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = "이미 같은 이름의 후보 카드가 있습니다.";
+    return;
+  }
+
+  statusEl.textContent = "GitHub에 저장하는 중...";
+
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+  };
+
+  try {
+    const getRes = await fetch(apiUrl, { headers });
+    if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
+    const getJson = await getRes.json();
+    const currentData = JSON.parse(b64ToUtf8(getJson.content));
+
+    if (!currentData._watchlist) currentData._watchlist = {};
+    const entry = { grade, url, series: [] };
+    if (targetRaw) entry.targetPrice = parseInt(targetRaw, 10);
+    if (memo) entry.memo = memo;
+    currentData._watchlist[name] = entry;
+
+    const putRes = await fetch(apiUrl, {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `chore: add watchlist candidate ${name}`,
+        content: utf8ToB64(JSON.stringify(currentData, null, 1)),
+        sha: getJson.sha,
+      }),
+    });
+    if (!putRes.ok) {
+      const errJson = await putRes.json().catch(() => ({}));
+      throw new Error(`저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
+    }
+
+    data = currentData;
+    renderWatchlist();
+
+    statusEl.className = "add-status ok";
+    statusEl.textContent = `"${name}" 후보 카드가 추가됐습니다. 다음 자동 갱신 때 시세가 채워집니다.`;
+    ["wlAddName", "wlAddGrade", "wlAddTarget", "wlAddMemo", "wlAddUrl"].forEach(id => document.getElementById(id).value = "");
+  } catch (e) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = e.message;
+  }
+}
+
+document.getElementById("wlAddSubmit").addEventListener("click", addCandidateToGithub);
+
+async function deleteCandidateFromGithub(name) {
+  const owner = ghOwnerEl.value.trim();
+  const repo = ghRepoEl.value.trim();
+  const token = ghTokenEl.value.trim();
+  const statusEl = document.getElementById("wlAddStatus");
+  const watchlistToggle = document.querySelectorAll("details.add-toggle")[1];
+
+  if (!owner || !repo || !token) {
+    if (watchlistToggle) watchlistToggle.open = true;
+    statusEl.className = "add-status err";
+    statusEl.textContent = "삭제하려면 위쪽 GitHub 연결 설정을 먼저 입력해주세요.";
+    return;
+  }
+  if (!confirm(`"${name}" 후보 카드를 삭제할까요?`)) return;
+
+  if (watchlistToggle) watchlistToggle.open = true;
+  statusEl.className = "add-status";
+  statusEl.textContent = `"${name}" 삭제하는 중...`;
+
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+  };
+
+  try {
+    const getRes = await fetch(apiUrl, { headers });
+    if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
+    const getJson = await getRes.json();
+    const currentData = JSON.parse(b64ToUtf8(getJson.content));
+
+    if (!currentData._watchlist || !currentData._watchlist[name]) {
+      throw new Error("이미 삭제되었거나 존재하지 않는 후보 카드입니다.");
+    }
+    delete currentData._watchlist[name];
+
+    const putRes = await fetch(apiUrl, {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `chore: delete watchlist candidate ${name}`,
+        content: utf8ToB64(JSON.stringify(currentData, null, 1)),
+        sha: getJson.sha,
+      }),
+    });
+    if (!putRes.ok) {
+      const errJson = await putRes.json().catch(() => ({}));
+      throw new Error(`삭제 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
+    }
+
+    data = currentData;
+    renderWatchlist();
+
+    statusEl.className = "add-status ok";
+    statusEl.textContent = `"${name}" 후보 카드가 삭제됐습니다.`;
+  } catch (e) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = e.message;
+  }
 }
 
 async function addCardToGithub() {
@@ -1147,6 +1471,7 @@ refreshBtn.addEventListener("click", async () => {
             buildSelect();
             const first = cardNames(data)[0];
             if (first) renderChart(document.getElementById("cardSelect").value || first);
+            renderWatchlist();
 
             refreshStatus.className = "refresh-status ok";
             let countdown = 3;
@@ -1199,6 +1524,7 @@ async function init() {
   renderTable();
   buildSelect();
   renderChart(cardNames(data)[0]);
+  renderWatchlist();
 }
 init();
 </script>
@@ -1206,7 +1532,7 @@ init();
 <footer>
   <b>데이터 출처</b>: SNKRDUNK(스니커덩크) 각 카드 상세 페이지의 매매이력(売買履歴), PSA10·1장 거래만 집계.<br>
   <b>환산 방식</b>: 엔화 거래가 × 환율(자동 조회) × 1.10(관부가세) = 한국에서 실제 구매 시 드는 비용 기준.<br>
-  <b>갱신 방법</b>: GitHub Actions가 매일 자동으로 스니커덩크를 조회해 data.json을 갱신합니다. 우측 상단 "지금 업데이트" 버튼으로 즉시 실행하거나, Actions 탭에서 수동 실행도 가능합니다.
+  <b>갱신 방법</b>: GitHub Actions가 매일 자동으로 스니커덩크를 조회해 data.json을 갱신합니다(보유 카드 + 관심 후보 카드 모두 포함). 우측 상단 "지금 업데이트" 버튼으로 즉시 실행하거나, Actions 탭에서 수동 실행도 가능합니다.
 </footer>
 
 </body>
