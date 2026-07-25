@@ -176,20 +176,6 @@
   .gap-hit { color: var(--green); font-weight: 700; }
   .gap-wait { color: var(--gray); }
   .watchlist-empty { color: var(--gray); font-size: 13px; padding: 16px 0; text-align: center; }
-  table#watchlistTable tbody td.ai-cell { white-space: normal; text-align: left; max-width: 220px; }
-  .ai-badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 9px;
-    border-radius: 999px;
-  }
-  .ai-cheap { background: #dcfce7; color: #15803d; }
-  .ai-fair { background: #e0e7ff; color: #4338ca; }
-  .ai-expensive { background: #fee2e2; color: #b91c1c; }
-  .ai-none { background: #f3f4f6; color: #6b7280; }
-  .ai-comment { font-size: 12px; color: #374151; margin-top: 5px; line-height: 1.5; }
-  .ai-ago { font-size: 10.5px; color: var(--gray); margin-top: 3px; }
   .th-stack { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.5; gap: 1px; }
   .th-stack .th-top { font-size: 11.5px; color: #6b7280; font-weight: 600; }
   .th-stack .th-bottom { font-size: 12px; color: #374151; font-weight: 700; }
@@ -262,6 +248,16 @@
     border-radius: 8px;
     font-size: 13px;
     box-sizing: border-box;
+  }
+  .add-grid select {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    box-sizing: border-box;
+    background: #fff;
+    color: #111827;
   }
   .add-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .btn {
@@ -481,8 +477,20 @@
       <input type="text" id="addName" placeholder="예: 오사카 만자이 피카츄">
     </div>
     <div>
-      <label>등급 / 세트정보</label>
-      <input type="text" id="addGrade" placeholder="예: SM-P 407 · PSA10">
+      <label>세트/카드번호</label>
+      <input type="text" id="addGrade" placeholder="예: SM-P 407">
+    </div>
+    <div>
+      <label>등급</label>
+      <select id="addGradeSelect">
+        <option value="PSA10" selected>PSA10</option>
+        <option value="PSA9">PSA9</option>
+        <option value="PSA8 이하">PSA8 이하</option>
+        <option value="BGS10 BL">BGS10 BL</option>
+        <option value="BGS10 GL">BGS10 GL</option>
+        <option value="BGS9.5">BGS9.5</option>
+        <option value="기타">기타(직접 입력한 세트정보에 포함)</option>
+      </select>
     </div>
     <div>
       <label>구매가(원)</label>
@@ -526,7 +534,6 @@
         <th>현재가(관부가세 포함)</th>
         <th>목표가</th>
         <th>목표가 대비</th>
-        <th>AI 평가</th>
         <th>최근 거래일</th>
         <th style="text-align:right">SNKRDUNK</th>
         <th style="text-align:right"></th>
@@ -545,8 +552,20 @@
           <input type="text" id="wlAddName" placeholder="예: 요코하마 삼총사">
         </div>
         <div>
-          <label>등급 / 세트정보</label>
-          <input type="text" id="wlAddGrade" placeholder="예: SM-P 282 · PSA10">
+          <label>세트/카드번호</label>
+          <input type="text" id="wlAddGrade" placeholder="예: SM-P 282">
+        </div>
+        <div>
+          <label>등급</label>
+          <select id="wlAddGradeSelect">
+            <option value="PSA10" selected>PSA10</option>
+            <option value="PSA9">PSA9</option>
+            <option value="PSA8 이하">PSA8 이하</option>
+            <option value="BGS10 BL">BGS10 BL</option>
+            <option value="BGS10 GL">BGS10 GL</option>
+            <option value="BGS9.5">BGS9.5</option>
+            <option value="기타">기타(직접 입력한 세트정보에 포함)</option>
+          </select>
         </div>
         <div>
           <label>목표 매수가(원, 선택)</label>
@@ -950,7 +969,6 @@ function watchlistRows() {
       memo: d.memo || "",
       cur,
       lastTrade: d.lastTradeDate || "",
-      evaluation: d.aiEvaluation || null,
     };
   });
 }
@@ -960,7 +978,7 @@ function renderWatchlist() {
   const rows = watchlistRows();
 
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="watchlist-empty">아직 등록된 후보 카드가 없어요. 아래 "➕ 후보 카드 추가"에서 추가해보세요.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="watchlist-empty">아직 등록된 후보 카드가 없어요. 아래 "➕ 후보 카드 추가"에서 추가해보세요.</div></td></tr>`;
     return;
   }
 
@@ -974,18 +992,6 @@ function renderWatchlist() {
         : `<span class="gap-wait">목표가까지 +${gapPct.toFixed(1)}%</span>`;
     }
 
-    let aiHtml = `<span class="ai-badge ai-none">평가 전</span>`;
-    if (r.evaluation) {
-      const verdict = r.evaluation.verdict;
-      const cls = verdict === "저평가" ? "ai-cheap" : verdict === "고평가" ? "ai-expensive" : "ai-fair";
-      const ago = timeAgoLabel(r.evaluation.evaluatedAt);
-      aiHtml = `
-        <span class="ai-badge ${cls}">${verdict}</span>
-        <div class="ai-comment">${r.evaluation.comment}</div>
-        ${ago ? `<div class="ai-ago">${ago.label} 평가</div>` : ""}
-      `;
-    }
-
     return `
     <tr>
       <td>
@@ -995,7 +1001,6 @@ function renderWatchlist() {
       <td>${r.cur !== null ? won(r.cur) : "아직 시세 없음"}</td>
       <td>${r.target ? won(r.target) : "-"}</td>
       <td>${gapHtml}</td>
-      <td class="ai-cell">${aiHtml}</td>
       <td>${formatLastTrade(r.lastTrade)}</td>
       <td>${r.url ? `<a class="snkrdunk-link" href="${r.url}" target="_blank" rel="noopener">보기 →</a>` : "-"}</td>
       <td><button class="del-link" data-wl-del="${r.name}">삭제</button></td>
@@ -1013,7 +1018,9 @@ async function addCandidateToGithub() {
   statusEl.textContent = "";
 
   const name = document.getElementById("wlAddName").value.trim();
-  const grade = document.getElementById("wlAddGrade").value.trim();
+  const setInfo = document.getElementById("wlAddGrade").value.trim();
+  const gradeChoice = document.getElementById("wlAddGradeSelect").value;
+  const grade = gradeChoice === "기타" ? setInfo : (setInfo ? `${setInfo} · ${gradeChoice}` : gradeChoice);
   const url = document.getElementById("wlAddUrl").value.trim();
   const targetRaw = document.getElementById("wlAddTarget").value;
   const memo = document.getElementById("wlAddMemo").value.trim();
@@ -1021,7 +1028,7 @@ async function addCandidateToGithub() {
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
 
-  if (!name || !grade || !url) {
+  if (!name || !setInfo || !url) {
     statusEl.className = "add-status err";
     statusEl.textContent = "카드명·등급·SNKRDUNK 링크는 필수예요.";
     return;
@@ -1077,6 +1084,7 @@ async function addCandidateToGithub() {
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 후보 카드가 추가됐습니다. 다음 자동 갱신 때 시세가 채워집니다.`;
     ["wlAddName", "wlAddGrade", "wlAddTarget", "wlAddMemo", "wlAddUrl"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("wlAddGradeSelect").value = "PSA10";
   } catch (e) {
     statusEl.className = "add-status err";
     statusEl.textContent = e.message;
@@ -1152,7 +1160,9 @@ async function addCardToGithub() {
   statusEl.textContent = "";
 
   const name = document.getElementById("addName").value.trim();
-  const grade = document.getElementById("addGrade").value.trim();
+  const setInfo = document.getElementById("addGrade").value.trim();
+  const gradeChoice = document.getElementById("addGradeSelect").value;
+  const grade = gradeChoice === "기타" ? setInfo : (setInfo ? `${setInfo} · ${gradeChoice}` : gradeChoice);
   const buy = parseInt(document.getElementById("addBuy").value, 10);
   const cur = parseInt(document.getElementById("addCur").value, 10);
   const url = document.getElementById("addUrl").value.trim();
@@ -1160,7 +1170,7 @@ async function addCardToGithub() {
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
 
-  if (!name || !grade || !url || isNaN(buy) || isNaN(cur)) {
+  if (!name || !setInfo || !url || isNaN(buy) || isNaN(cur)) {
     statusEl.className = "add-status err";
     statusEl.textContent = "모든 항목을 채워주세요.";
     return;
@@ -1217,6 +1227,7 @@ async function addCardToGithub() {
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 카드가 추가됐습니다. 1~2분 뒤 사이트에도 반영됩니다.`;
     ["addName","addGrade","addBuy","addCur","addUrl"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("addGradeSelect").value = "PSA10";
   } catch (e) {
     statusEl.className = "add-status err";
     statusEl.textContent = e.message;
