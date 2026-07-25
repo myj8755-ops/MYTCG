@@ -136,6 +136,39 @@
   .last-trade-cell { font-size: 12.5px; color: var(--gray); }
   .last-trade-cell.stale { color: #b45309; }
 
+  .dt-value.editable-wrap textarea {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    box-sizing: border-box;
+    resize: vertical;
+  }
+  .dt-edit-link {
+    font-size: 11px;
+    color: #2563eb;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0;
+    margin-left: 6px;
+  }
+  .dt-edit-link:hover { text-decoration: underline; }
+  .dt-edit-actions { margin-top: 6px; display: flex; gap: 8px; }
+  .dt-edit-actions button {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .dt-edit-save { background: #2563eb; color: #fff; border: none; }
+  .dt-edit-save:hover { background: #1d4ed8; }
+  .dt-edit-cancel { background: #fff; color: #374151; border: 1px solid var(--border); }
+  .dt-edit-cancel:hover { background: var(--bg-soft); }
+
   .watchlist-section {
     margin-top: 32px;
     border: 1px solid var(--border);
@@ -1007,8 +1040,26 @@ function watchlistRows() {
 }
 
 let expandedWlName = null;
+let wlEvalEditing = false;
 
 function watchlistDetailRowHtml(r) {
+  const evalValueHtml = wlEvalEditing
+    ? `
+      <div class="dt-value editable-wrap">
+        <textarea id="wlEvalEditArea" rows="4">${r.evaluation || ""}</textarea>
+        <div class="dt-edit-actions">
+          <button class="dt-edit-save" data-wl-eval-save="${r.name}">저장</button>
+          <button class="dt-edit-cancel" data-wl-eval-cancel>취소</button>
+        </div>
+      </div>
+    `
+    : `
+      <div class="dt-value">
+        ${r.evaluation || "아직 작성한 평가가 없어요."}
+        <button class="dt-edit-link" data-wl-eval-edit="${r.name}">✎ 수정</button>
+      </div>
+    `;
+
   return `
     <tr class="detail-row" data-wl-detail-for="${r.name}">
       <td colspan="8">
@@ -1024,7 +1075,7 @@ function watchlistDetailRowHtml(r) {
           </div>
           <div class="detail-item">
             <div class="dt-label">평가</div>
-            <div class="dt-value" style="white-space: pre-line">${r.evaluation || "아직 작성한 평가가 없어요. 위 '➕ 후보 카드 추가'에서 삭제 후 다시 추가하거나, GitHub에서 data.json을 직접 편집해 추가할 수 있어요."}</div>
+            ${evalValueHtml}
           </div>
         </div>
       </td>
@@ -1076,7 +1127,9 @@ function renderWatchlist() {
   tbody.querySelectorAll("tr[data-wl-name]").forEach(tr => {
     tr.addEventListener("click", () => {
       const name = tr.dataset.wlName;
-      expandedWlName = expandedWlName === name ? null : name;
+      const wasExpanded = expandedWlName === name;
+      expandedWlName = wasExpanded ? null : name;
+      wlEvalEditing = false;
       renderWatchlist();
       if (expandedWlName) {
         const opened = document.querySelector(`tr.detail-row[data-wl-detail-for="${CSS.escape(expandedWlName)}"]`);
@@ -1088,7 +1141,30 @@ function renderWatchlist() {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       expandedWlName = null;
+      wlEvalEditing = false;
       renderWatchlist();
+    });
+  });
+  tbody.querySelectorAll("[data-wl-eval-edit]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      wlEvalEditing = true;
+      renderWatchlist();
+    });
+  });
+  tbody.querySelectorAll("[data-wl-eval-cancel]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      wlEvalEditing = false;
+      renderWatchlist();
+    });
+  });
+  tbody.querySelectorAll("[data-wl-eval-save]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const name = btn.dataset.wlEvalSave;
+      const textarea = document.getElementById("wlEvalEditArea");
+      saveEvaluationToGithub(name, textarea.value);
     });
   });
   tbody.querySelectorAll("[data-wl-del]").forEach(btn => {
@@ -1242,6 +1318,73 @@ async function deleteCandidateFromGithub(name) {
   } catch (e) {
     statusEl.className = "add-status err";
     statusEl.textContent = e.message;
+  }
+}
+
+async function saveEvaluationToGithub(name, newText) {
+  const owner = ghOwnerEl.value.trim();
+  const repo = ghRepoEl.value.trim();
+  const token = ghTokenEl.value.trim();
+  const statusEl = document.getElementById("wlAddStatus");
+  const watchlistToggle = document.querySelectorAll("details.add-toggle")[1];
+
+  if (!owner || !repo || !token) {
+    if (watchlistToggle) watchlistToggle.open = true;
+    statusEl.className = "add-status err";
+    statusEl.textContent = "평가를 저장하려면 위쪽 GitHub 연결 설정을 먼저 입력해주세요.";
+    return;
+  }
+
+  const saveBtn = document.querySelector(`[data-wl-eval-save="${CSS.escape(name)}"]`);
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "저장 중..."; }
+
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+  };
+
+  try {
+    const getRes = await fetch(apiUrl, { headers });
+    if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
+    const getJson = await getRes.json();
+    const currentData = JSON.parse(b64ToUtf8(getJson.content));
+
+    if (!currentData._watchlist || !currentData._watchlist[name]) {
+      throw new Error("이미 삭제되었거나 존재하지 않는 후보 카드입니다.");
+    }
+
+    const trimmed = newText.trim();
+    if (trimmed) {
+      currentData._watchlist[name].evaluation = trimmed;
+    } else {
+      delete currentData._watchlist[name].evaluation;
+    }
+
+    const putRes = await fetch(apiUrl, {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `chore: update evaluation for ${name}`,
+        content: utf8ToB64(JSON.stringify(currentData, null, 1)),
+        sha: getJson.sha,
+      }),
+    });
+    if (!putRes.ok) {
+      const errJson = await putRes.json().catch(() => ({}));
+      throw new Error(`저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
+    }
+
+    data = currentData;
+    wlEvalEditing = false;
+    renderWatchlist();
+
+    statusEl.className = "add-status ok";
+    statusEl.textContent = `"${name}" 평가가 저장됐습니다.`;
+  } catch (e) {
+    statusEl.className = "add-status err";
+    statusEl.textContent = e.message;
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "저장"; }
   }
 }
 
