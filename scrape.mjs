@@ -81,85 +81,6 @@ function parseTradeDateText(dateText, now = new Date()) {
   return null;
 }
 
-// 관심 후보 카드(워치리스트)의 최근 시세 흐름을 Claude API에 보내
-// "저평가/적정가/고평가" 판단과 한 줄 코멘트를 받아온다.
-// ANTHROPIC_API_KEY 환경변수(GitHub Secret)가 없으면 조용히 건너뜀.
-const CLAUDE_MODEL = "claude-haiku-4-5-20251001"; // 짧은 평가용, 비용 효율적인 모델
-
-async function evaluateCandidateWithClaude(name, card) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.warn(`[ai-skip] ${name}: ANTHROPIC_API_KEY 환경변수가 없어 AI 평가를 건너뜁니다.`);
-    return null;
-  }
-
-  const series = card.series || [];
-  const currentPrice = series.length ? series[series.length - 1][1] : null;
-  const recentSeries = series.slice(-10);
-  const seriesText = recentSeries.length
-    ? recentSeries.map(([d, p]) => `${d}: ₩${p.toLocaleString("ko-KR")}`).join("\n")
-    : "가격 이력 없음";
-
-  const prompt = `너는 포켓몬 카드(트레이딩 카드) 투자 판단을 돕는 어시스턴트야. 아래 후보 카드의 최근 시세 흐름을 보고 지금이 매수하기에 저평가/적정가/고평가 중 어디에 해당하는지 판단해줘.
-
-카드명: ${name}
-등급/세트: ${card.grade || "정보없음"}
-현재가(관부가세 포함, KRW): ${currentPrice !== null ? "₩" + currentPrice.toLocaleString("ko-KR") : "정보없음"}
-목표 매수가: ${card.targetPrice ? "₩" + card.targetPrice.toLocaleString("ko-KR") : "설정 안 함"}
-메모: ${card.memo || "없음"}
-
-최근 시세 흐름(날짜: 가격, 오래된 순):
-${seriesText}
-
-반드시 아래 JSON 형식으로만 답해. 다른 텍스트, 설명, 마크다운은 절대 포함하지 마:
-{"verdict": "저평가 또는 적정가 또는 고평가 중 하나", "comment": "40자 이내의 한글 한 줄 코멘트"}`;
-
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 200,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      console.warn(`[ai-warn] ${name}: Claude API 호출 실패 (${res.status}) ${errText.slice(0, 200)}`);
-      return null;
-    }
-
-    const json = await res.json();
-    const textBlock = (json.content || []).find((b) => b.type === "text");
-    if (!textBlock) {
-      console.warn(`[ai-warn] ${name}: 응답에 텍스트 블록이 없음`);
-      return null;
-    }
-
-    const cleaned = textBlock.text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
-    if (!parsed.verdict || !parsed.comment) {
-      console.warn(`[ai-warn] ${name}: 응답 형식이 예상과 다름 - ${cleaned.slice(0, 200)}`);
-      return null;
-    }
-
-    return {
-      verdict: parsed.verdict,
-      comment: parsed.comment,
-      evaluatedAt: new Date().toISOString(),
-    };
-  } catch (e) {
-    console.warn(`[ai-warn] ${name}: 평가 처리 중 오류 - ${e.message}`);
-    return null;
-  }
-}
-
 async function main() {
   const raw = await fs.readFile(DATA_PATH, "utf-8");
   const data = JSON.parse(raw);
@@ -248,12 +169,6 @@ async function main() {
       console.log(
         `[ok-watchlist] ${name}: ¥${jpy.toLocaleString()} -> ₩${krw.toLocaleString()} (거래일: ${dateText} -> ${lastTradeDate || "해석 실패"})`
       );
-
-      const evaluation = await evaluateCandidateWithClaude(name, card);
-      if (evaluation) {
-        card.aiEvaluation = evaluation;
-        console.log(`[ai-ok] ${name}: ${evaluation.verdict} - ${evaluation.comment}`);
-      }
     } catch (e) {
       console.error(`[error-watchlist] ${name}:`, e.message);
     }
