@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포켓몬 카드 포트폴리오 (샘플)</title>
+<style>
+  :root{
+    --bg:#f6f7fb;
+    --card-bg:#ffffff;
+    --border:#e5e7eb;
+    --text:#1f2430;
+    --muted:#6b7280;
+    --blue:#2563eb;
+    --blue-soft:#eff6ff;
+    --green:#16a34a;
+    --red:#dc2626;
+    --amber-bg:#fffbeb;
+    --amber-border:#fde68a;
+    --amber-text:#92400e;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:14px;
+    line-height:1.5;
+  }
+  .wrap{
+    max-width:900px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+  .card{
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px 24px;
+    margin-bottom:18px;
+  }
+  .header-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+  }
+  h1{
+    font-size:19px;
+    margin:0 0 4px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  h1 .emoji{font-size:18px;}
+  .subtitle{
+    color:var(--muted);
+    font-size:12.5px;
+  }
+  .btn-update{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:var(--blue);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-update:hover{background:#1d4ed8;}
+
+  .stat-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-top:18px;
+  }
+  .stat-box{
+    background:#fafafa;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .stat-label{
+    color:var(--muted);
+    font-size:12px;
+    margin-bottom:6px;
+  }
+  .stat-value{
+    font-size:19px;
+    font-weight:700;
+  }
+  .stat-value.pos{color:var(--green);}
+  .stat-value.neg{color:var(--red);}
+
+  .note-box{
+    background:var(--amber-bg);
+    border:1px solid var(--amber-border);
+    color:var(--amber-text);
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:12.5px;
+    line-height:1.7;
+    margin-top:16px;
+  }
+  .note-box b{font-weight:700;}
+
+  .table-hint{
+    color:var(--muted);
+    font-size:12px;
+    margin:2px 0 10px;
+  }
+  .table-toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:6px;
+  }
+  .edit-order{
+    color:var(--blue);
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+  }
+  thead th{
+    text-align:left;
+    font-size:12px;
+    color:var(--muted);
+    font-weight:600;
+    padding:10px 8px;
+    border-bottom:1px solid var(--border);
+  }
+  thead th.num, td.num{text-align:right;}
+  tbody tr.card-row{
+    cursor:pointer;
+    border-bottom:1px solid var(--border);
+  }
+  tbody tr.card-row:hover{background:#fafbff;}
+  tbody tr.card-row.active{background:var(--blue-soft);}
+  td{padding:12px 8px;vertical-align:top;}
+  .card-name{font-weight:700;}
+  .card-code{color:var(--muted);font-size:12px;margin-top:2px;}
+  .price-line{white-space:nowrap;}
+  .price-old{color:var(--muted);font-size:12.5px;}
+  .price-new{font-weight:600;}
+  .pct{font-weight:700;font-size:12.5px;}
+  .pct.pos{color:var(--green);}
+  .pct.neg{color:var(--red);}
+  .amt{font-size:12.5px;font-weight:600;}
+  .amt.pos{color:var(--green);}
+  .amt.neg{color:var(--red);}
+  .link-view{color:var(--blue);font-weight:600;text-decoration:none;}
+  .link-del{color:var(--red);font-weight:600;cursor:pointer;}
+  .recent-date{white-space:nowrap;}
+  .recent-date.stale{color:#b45309;}
+
+  .detail-panel{
+    background:var(--blue-soft);
+    border-radius:10px;
+    padding:18px 20px;
+    margin:4px 0 14px;
+    border:1px solid #dbe6fd;
+  }
+  .detail-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-weight:700;
+    font-size:14.5px;
+    margin-bottom:14px;
+  }
+  .detail-head span.code{
+    color:var(--muted);
+    font-weight:500;
+    font-size:12.5px;
+    margin-left:6px;
+  }
+  .detail-close{
+    font-size:12.5px;
+    color:var(--muted);
+    cursor:pointer;
+    font-weight:600;
+  }
+  .detail-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px 32px;
+  }
+  .detail-block h4{
+    font-size:12.5px;
+    color:var(--blue);
+    margin:0 0 6px;
+    font-weight:700;
+  }
+  .detail-block p{
+    margin:0;
+    font-size:13px;
+    color:#374151;
+  }
+  .detail-block.full{grid-column:1 / -1;}
+
+  .add-row{
+    color:var(--blue);
+    font-weight:600;
+    font-size:13.5px;
+    margin-top:10px;
+    cursor:pointer;
+  }
+
+  .section-hint{
+    color:var(--muted);
+    font-size:12px;
+    margin:2px 0 14px;
+  }
+
+  .chart-select-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  select.card-select{
+    padding:7px 10px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    font-size:13px;
+    background:#fff;
+  }
+  .chart-meta{
+    font-size:12.5px;
+    color:#374151;
+  }
+  .chart-meta b.neg{color:var(--red);}
+  .chart-meta b.pos{color:var(--green);}
+  .snkr-link{
+    margin-left:auto;
+    color:var(--blue);
+    font-weight:600;
+    font-size:12.5px;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+  .legend{
+    display:flex;
+    gap:16px;
+    font-size:12px;
+    color:var(--muted);
+    justify-content:center;
+    margin-bottom:6px;
+  }
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend .sw{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  .sw.blue{background:var(--blue);}
+  .sw.dash{background:none;border-top:2px dashed #9ca3af;width:14px;height:0;}
+
+  .footer-note{
+    color:var(--muted);
+    font-size:11.5px;
+    line-height:1.8;
+    margin-top:18px;
+  }
+
+  @media (max-width:640px){
+    .stat-grid{grid-template-columns:repeat(2,1fr);}
+    .detail-grid{grid-template-columns:1fr;}
+    table thead{display:none;}
+    tbody tr.card-row{display:flex;flex-direction:column;padding:4px 0;}
+    td{padding:4px 8px;}
+    td.num{text-align:left;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header + summary -->
+  <div class="card">
+    <div class="header-row">
+      <div>
+        <h1><span class="emoji">🎴</span>포켓몬 카드 포트폴리오 <span style="font-size:11px;background:#eef2ff;color:#4338ca;border-radius:6px;padding:2px 6px;font-weight:600;">샘플</span></h1>
+        <div class="subtitle">보유 카드 21종 · SNKRDUNK(스니커덩크) PSA10 최신 거래가 + 관부가세 10% 반영 · 최종 갱신: 2026-07-27 09:41 (KST)</div>
+      </div>
+      <button class="btn-update" onclick="alert('샘플 페이지입니다. 실제 데이터 연동은 되어 있지 않아요.')">📥 지금 업데이트</button>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label">총 구매금액</div>
+        <div class="stat-value" id="statTotalBuy">-</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">평가금액 (관부가세 포함)</div>
+        <div class="stat-value" id="statTotalNow">-</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">평가손익</div>
+        <div class="stat-value pos" id="statPnl">-</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">수익률</div>
+        <div class="stat-value pos" id="statPct">-</div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      <b>계산 방식:</b> 스니커덩크 엔화 거래가 × 환율(자동 조회) × 1.10(한국 반입 시 관부가세 10%) = 실제 한국에서 이 카드를 사려면 드는 비용 기준, 등급은 전 카드 PSA10 기준입니다. <b>PSA10 Pop</b>은 PSA 공식 population report 기준 해당 카드의 PSA10 등급 전 세계 발급 수량입니다(이후 계속 증가할 수 있음). <b>최근 거래일</b>은 SNKRDUNK 매매이력에서 확인된 가장 최근 PSA10 1장 거래가 이뤄진 날짜입니다(7일 이상 지났으면 주황색으로 표시). 표에서 카드 행을 클릭하면 바로 아래에 획득 경로·특징·평가·5년 후 가치 예상이 펼쳐집니다(평가/전망은 개인 추정치이며 투자 조언이 아닙니다). 카드별 시세 추이 아래에서 카드를 골라 개별 손익도 확인할 수 있습니다.
+    </div>
+  </div>
+
+  <!-- Holdings table -->
+  <div class="card">
+    <div class="table-toolbar">
+      <div class="table-hint">표 제목을 누르면 정렬돼요.</div>
+      <div class="edit-order">✎ 순서 편집</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>카드명</th>
+          <th class="num">구매가<br>현재가(관부가세 포함)</th>
+          <th class="num">수익률<br>손익액</th>
+          <th class="num">PSA10 Pop</th>
+          <th class="num">최근 거래일</th>
+          <th class="num">SNKRDUNK</th>
+        </tr>
+      </thead>
+      <tbody id="holdingsBody"></tbody>
+    </table>
+    <div class="add-row" onclick="alert('샘플 페이지입니다.')">＋ 카드 추가</div>
+  </div>
+
+  <!-- Watchlist -->
+  <div class="card">
+    <h1 style="font-size:15px;"><span class="emoji">🎯</span>관심 후보 카드</h1>
+    <div class="section-hint">아직 안 산, 사고 싶은 카드들을 여기에 따로 적어두세요. 시세는 보유 카드와 똑같이 매일 자동 갱신됩니다. 손익 계산에는 포함되지 않아요.</div>
+    <table>
+      <thead>
+        <tr>
+          <th>카드명</th>
+          <th class="num">현재가(관부가세 포함)</th>
+          <th class="num">목표가</th>
+          <th class="num">목표가 대비</th>
+          <th class="num">PSA10 Pop</th>
+          <th class="num">최근 거래일</th>
+          <th class="num">SNKRDUNK</th>
+        </tr>
+      </thead>
+      <tbody id="watchBody"></tbody>
+    </table>
+    <div class="add-row" onclick="alert('샘플 페이지입니다.')">＋ 후보 카드 추가</div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card">
+    <h1 style="font-size:15px;"><span class="emoji">📈</span>카드별 시세 추이</h1>
+    <div class="chart-select-row">
+      <select class="card-select" id="chartSelect"></select>
+      <div class="chart-meta" id="chartMeta"></div>
+      <a class="snkr-link" href="#" onclick="return false;">SNKRDUNK에서 보기 →</a>
+    </div>
+    <div class="legend">
+      <span><span class="sw blue"></span>PSA10 거래가(관부가세 포함)</span>
+      <span><span class="sw dash"></span>구매가</span>
+    </div>
+    <svg id="chartSvg" viewBox="0 0 760 260" style="width:100%;height:260px;"></svg>
+    <div class="footer-note" style="margin-top:8px;">점선은 구매가입니다. 표시 구간은 SNKRDUNK에 남아있는 최근 거래 내역 범위로, 카드마다 거래빈도에 따라 기간이 다릅니다(거래가 활발한 카드는 최근 1~2일분만 조회됨).</div>
+  </div>
+
+  <div class="footer-note">
+    데이터 출처: SNKRDUNK(스니커덩크) 각 카드 상세 페이지의 매매이력(売買履歴), PSA·1장 거래만 집계.<br>
+    환산 방식: 엔화 거래가 × 환율(자동 조회) × 1.10(관부가세) = 한국에서 실제 구매 시 드는 비용 기준.<br>
+    ※ 본 페이지는 데모/샘플용으로, 모든 카드명·가격·수량은 임의로 생성된 예시입니다. 실제 시세와 무관합니다.
+  </div>
+
+</div>
+
+<script>
+// ---------- Sample data (fictional, for demo only) ----------
+const holdings = [
+  {name:"리자몽 VMAX", code:"020/189 · PSA10", buy:9800000, seed:1},
+  {name:"피카츄 일러스트레이터", code:"PROMO · PSA10", buy:15200000, seed:2},
+  {name:"뮤츠 GX SR", code:"SM-P 001 · PSA10", buy:1250000, seed:3},
+  {name:"루기아 V SAR", code:"186/172 · PSA10", buy:980000, seed:4},
+  {name:"팬텀 VMAX SAR", code:"065/184 · PSA10", buy:1420000, seed:5},
+  {name:"이상해꽃 ex SAR", code:"003/165 · PSA10", buy:870000, seed:6},
+  {name:"거북왕 EX SAR", code:"007/165 · PSA10", buy:760000, seed:7},
+  {name:"망나뇽 V SAR", code:"110/100 · PSA10", buy:2100000, seed:8},
+  {name:"뮤 EX SAR", code:"151/165 · PSA10", buy:1980000, seed:9},
+  {name:"성도의 친구 SR", code:"264/172 · PSA10", buy:540000, seed:10},
+  {name:"프로듀서 SR", code:"219/165 · PSA10", buy:610000, seed:11},
+  {name:"부스터 V SAR", code:"019/165 · PSA10", buy:430000, seed:12},
+  {name:"샤미드 ex SAR", code:"232/165 · PSA10", buy:390000, seed:13},
+  {name:"나무킹 V SAR", code:"008/172 · PSA10", buy:720000, seed:14},
+  {name:"모다피 EX SAR", code:"215/165 · PSA10", buy:350000, seed:15},
+  {name:"블래키 GX SAR", code:"217/187 · PSA10", buy:870000, seed:16},
+  {name:"에브이 히어로즈 SAR", code:"212/187 · PSA10", buy:330000, seed:17},
+  {name:"고라파덕 GX SAR", code:"011/094 · PSA10", buy:426000, seed:18},
+  {name:"데덴네 GX SR", code:"175/173 · PSA10", buy:585000, seed:19},
+  {name:"151 마스터볼 리자몽", code:"006/165 · PSA10", buy:1180000, seed:20},
+  {name:"메타몽 프로모", code:"SV-P 001 · PSA10", buy:500000, seed:21},
+];
+
+const watchlist = [
+  {name:"블랙 라이스 SAR", code:"288/SV-P · PSA10", target:1370000, seed:101, buy:0},
+  {name:"이브이 히어로즈 하프밀러", code:"XY-P 295 · PSA10", target:9000000, seed:102, buy:0},
+];
+
+// deterministic pseudo-random from a seed so the "random" numbers are stable across renders
+function rand(seed){
+  let x = Math.sin(seed*9973+1) * 10000;
+  return x - Math.floor(x);
+}
+function randRange(seed, min, max){ return min + rand(seed)*(max-min); }
+function fmtWon(n){ return "₩" + Math.round(n).toLocaleString("ko-KR"); }
+function fmtWonSigned(n){
+  const s = n>=0 ? "+₩" : "-₩";
+  return s + Math.abs(Math.round(n)).toLocaleString("ko-KR");
+}
+function fmtPct(p){
+  const s = p>=0 ? "+" : "";
+  return s + p.toFixed(1) + "%";
+}
+
+// compute current price & pop & date for each card, deterministically
+holdings.forEach((c,i)=>{
+  const pctChange = randRange(c.seed, -0.4, 0.3); // -40% ~ +30%
+  c.now = c.buy * (1+pctChange);
+  c.pct = pctChange*100;
+  c.pnl = c.now - c.buy;
+  c.pop = Math.round(randRange(c.seed+50, 700, 28000));
+  const hoursAgo = Math.round(randRange(c.seed+70, 1, 240));
+  if(hoursAgo < 24){ c.recentLabel = hoursAgo+"시간 전"; c.stale=false; }
+  else { const d = Math.round(hoursAgo/24); c.recentLabel = d+"일 전"; c.stale = d>=7; }
+  c.recentHours = hoursAgo;
+});
+
+watchlist.forEach(c=>{
+  c.now = c.target * (1+randRange(c.seed, 0.1, 1.1));
+  c.diffPct = ((c.now/c.target)-1)*100;
+  c.pop = Math.round(randRange(c.seed+50, 700, 3600));
+  const hoursAgo = Math.round(randRange(c.seed+70, 1, 240));
+  if(hoursAgo < 24){ c.recentLabel = hoursAgo+"시간 전"; c.stale=false; }
+  else { const d = Math.round(hoursAgo/24); c.recentLabel = d+"일 전"; c.stale = d>=7; }
+});
+
+const detailPool = [
+  {
+    route:"2025년 겨울 시즌 부스터 박스 출시 기념 스페셜세트에 동봉된 프로모예요. 공식 온라인 스토어 추첨 응모를 통해서만 구매할 수 있었어요.",
+    feature:"화려한 홀로그램 가공과 배경 일러스트가 특징으로, 시리즈 내에서도 인기가 높은 편이에요.",
+    eval1:"Pop 수량 대비 거래가 활발한 편에 속해요. 출시된 지 얼마 안 된 카드라 아직 그레이딩이 계속 유입되고 있는 단계예요.",
+    eval2:"현재 가격은 최근 pop 증가 속도 대비 합리적인 수준으로 보여요.",
+    outlook:"출시 초기라 pop이 당분간 계속 늘어날 가능성이 높아요. 단기적으로는 공급 증가로 가격이 눌릴 수 있지만, 한정판이라는 특성상 장기적으로는 완만한 상승이 기대돼요. (추정치이며 투자 조언이 아니에요)"
+  }
+];
+
+// ---------- Summary stats ----------
+const totalBuy = holdings.reduce((s,c)=>s+c.buy,0);
+const totalNow = holdings.reduce((s,c)=>s+c.now,0);
+const totalPnl = totalNow-totalBuy;
+const totalPct = (totalPnl/totalBuy)*100;
+document.getElementById("statTotalBuy").textContent = fmtWon(totalBuy);
+document.getElementById("statTotalNow").textContent = fmtWon(totalNow);
+const pnlEl = document.getElementById("statPnl");
+pnlEl.textContent = fmtWonSigned(totalPnl);
+pnlEl.className = "stat-value " + (totalPnl>=0?"pos":"neg");
+const pctEl = document.getElementById("statPct");
+pctEl.textContent = fmtPct(totalPct);
+pctEl.className = "stat-value " + (totalPct>=0?"pos":"neg");
+
+// ---------- Render holdings table ----------
+const tbody = document.getElementById("holdingsBody");
+let openIndex = null;
+
+function renderHoldings(){
+  tbody.innerHTML = "";
+  holdings.forEach((c,i)=>{
+    const tr = document.createElement("tr");
+    tr.className = "card-row" + (openIndex===i ? " active":"");
+    tr.innerHTML = `
+      <td>
+        <div class="card-name">${c.name}</div>
+        <div class="card-code">${c.code}</div>
+      </td>
+      <td class="num price-line">
+        <div class="price-old">${fmtWon(c.buy)}</div>
+        <div class="price-new">→ ${fmtWon(c.now)}</div>
+      </td>
+      <td class="num">
+        <div class="pct ${c.pct>=0?'pos':'neg'}">${fmtPct(c.pct)}</div>
+        <div class="amt ${c.pnl>=0?'pos':'neg'}">${fmtWonSigned(c.pnl)}</div>
+      </td>
+      <td class="num">${c.pop.toLocaleString("ko-KR")}장</td>
+      <td class="num recent-date ${c.stale?'stale':''}">${c.recentLabel}</td>
+      <td class="num"><a class="link-view" href="#" onclick="return false;">보기 →</a> &nbsp; <span class="link-del" onclick="event.stopPropagation();alert('샘플 페이지입니다.')">삭제</span></td>
+    `;
+    tr.addEventListener("click", ()=>{
+      openIndex = (openIndex===i) ? null : i;
+      renderHoldings();
+      if(openIndex===i){
+        const panel = document.createElement("tr");
+        panel.innerHTML = `<td colspan="6" style="padding:0;">${detailHtml(c)}</td>`;
+        tr.after(panel);
+      }
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function detailHtml(c){
+  const d = detailPool[0];
+  return `
+  <div class="detail-panel">
+    <div class="detail-head">
+      ${c.name} <span class="code">${c.code}</span>
+      <span class="detail-close" onclick="event.stopPropagation();document.dispatchEvent(new Event('closeDetail'))">✕ 닫기</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-block">
+        <h4>PSA10 POP</h4>
+        <p>${c.pop.toLocaleString("ko-KR")}장</p>
+      </div>
+      <div class="detail-block">
+        <h4>획득 경로</h4>
+        <p>${d.route}</p>
+      </div>
+      <div class="detail-block">
+        <h4>카드 특징</h4>
+        <p>${d.feature}</p>
+      </div>
+      <div class="detail-block">
+        <h4>카드 평가</h4>
+        <p>${d.eval1} ${d.eval2}</p>
+      </div>
+      <div class="detail-block full">
+        <h4>5년 후 가치 예상</h4>
+        <p>${d.outlook}</p>
+      </div>
+    </div>
+  </div>`;
+}
+document.addEventListener("closeDetail", ()=>{ openIndex=null; renderHoldings(); });
+
+renderHoldings();
+
+// ---------- Render watchlist ----------
+const wbody = document.getElementById("watchBody");
+watchlist.forEach(c=>{
+  const tr = document.createElement("tr");
+  tr.className = "card-row";
+  tr.innerHTML = `
+    <td>
+      <div class="card-name">${c.name}</div>
+      <div class="card-code">${c.code}</div>
+    </td>
+    <td class="num">${fmtWon(c.now)}</td>
+    <td class="num">${fmtWon(c.target)}</td>
+    <td class="num ${c.diffPct>=0?'pos':'neg'}" style="font-weight:600;">목표가까지 ${c.diffPct>=0?'+':''}${c.diffPct.toFixed(1)}%</td>
+    <td class="num">${c.pop.toLocaleString("ko-KR")}장</td>
+    <td class="num recent-date ${c.stale?'stale':''}">${c.recentLabel}</td>
+    <td class="num"><a class="link-view" href="#" onclick="return false;">보기 →</a> &nbsp; <span class="link-del" onclick="alert('샘플 페이지입니다.')">삭제</span></td>
+  `;
+  wbody.appendChild(tr);
+});
+
+// ---------- Chart ----------
+const select = document.getElementById("chartSelect");
+holdings.forEach((c,i)=>{
+  const opt = document.createElement("option");
+  opt.value = i;
+  opt.textContent = c.name;
+  select.appendChild(opt);
+});
+// default to second card (index 1) to mimic reference screenshot showing a losing card expanded
+select.value = 1;
+
+function seriesFor(c){
+  // generate 4 points trending from buy price toward current "now" price
+  const days = ["2026-07-24","2026-07-25","2026-07-26","2026-07-27"];
+  const pts = [];
+  for(let i=0;i<4;i++){
+    const t = i/3;
+    const noise = (rand(c.seed*7+i)-0.5)*0.03*c.buy;
+    const val = c.buy + (c.now-c.buy)*Math.pow(t,0.85) + (i<3?noise:0);
+    pts.push(Math.max(val, c.now*0.5));
+  }
+  pts[3] = c.now;
+  return {days, pts};
+}
+
+function drawChart(){
+  const i = parseInt(select.value,10);
+  const c = holdings[i];
+  const {days, pts} = seriesFor(c);
+  const meta = document.getElementById("chartMeta");
+  meta.innerHTML = `구매가 ${fmtWon(c.buy)} → 현재가 ${fmtWon(c.now)} · <b class="${c.pnl>=0?'pos':'neg'}">${fmtWonSigned(c.pnl)} (${fmtPct(c.pct)})</b> · PSA10 Pop ${c.pop.toLocaleString('ko-KR')}장`;
+
+  const svg = document.getElementById("chartSvg");
+  svg.innerHTML = "";
+  const W=760,H=260, padL=70, padR=20, padT=20, padB=30;
+  const maxVal = Math.max(c.buy, ...pts) * 1.08;
+  const minVal = 0;
+  const x = idx => padL + (W-padL-padR) * (idx/(days.length-1));
+  const y = val => padT + (H-padT-padB) * (1 - (val-minVal)/(maxVal-minVal));
+
+  function svgEl(tag, attrs){
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for(const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  // gridlines + y labels
+  const steps = 5;
+  for(let s=0;s<=steps;s++){
+    const val = maxVal * s/steps;
+    const yy = y(val);
+    svg.appendChild(svgEl("line",{x1:padL,y1:yy,x2:W-padR,y2:yy,stroke:"#eef0f4",'stroke-width':1}));
+    const label = svgEl("text",{x:padL-8,y:yy+4,'text-anchor':'end','font-size':11,fill:"#9ca3af"});
+    label.textContent = "₩" + Math.round(val/10000) + "만";
+    svg.appendChild(label);
+  }
+  // x labels
+  days.forEach((d,idx)=>{
+    const label = svgEl("text",{x:x(idx),y:H-8,'text-anchor':'middle','font-size':11,fill:"#9ca3af"});
+    label.textContent = d.slice(5);
+    svg.appendChild(label);
+  });
+
+  // buy price dashed line
+  const buyY = y(c.buy);
+  svg.appendChild(svgEl("line",{x1:padL,y1:buyY,x2:W-padR,y2:buyY,stroke:"#9ca3af",'stroke-width':1.5,'stroke-dasharray':"5,4"}));
+
+  // price line
+  const pathD = pts.map((v,idx)=> (idx===0?"M":"L") + x(idx) + "," + y(v)).join(" ");
+  svg.appendChild(svgEl("path",{d:pathD, fill:"none", stroke:"#2563eb", 'stroke-width':2.5}));
+  pts.forEach((v,idx)=>{
+    svg.appendChild(svgEl("circle",{cx:x(idx), cy:y(v), r:4, fill:"#2563eb"}));
+  });
+}
+
+select.addEventListener("change", drawChart);
+drawChart();
+</script>
+</body>
+</html>
