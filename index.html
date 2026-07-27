@@ -518,6 +518,16 @@
     white-space: nowrap;
   }
   table.history-table tbody td:first-child { text-align: left; }
+  .history-issue-note {
+    white-space: normal;
+    text-align: right;
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 2px;
+    max-width: 220px;
+    margin-left: auto;
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
@@ -865,11 +875,25 @@ function buildPortfolioHistory() {
       if (price !== undefined) lastKnown[n] = price;
     });
     const totalCur = names.reduce((s, n) => s + lastKnown[n], 0);
-    return [ts, totalCur];
+    return { ts, totalCur, perCard: { ...lastKnown } }; // perCard: 그 시점 기준 카드별 평가금액 스냅샷
   });
   return { totalBuy, points };
 }
-// 포트폴리오 전체 평가금액이 시각별로 어떻게 바뀌었는지(변동액/변동률/그 시점 수익률)를 보여준다.
+// 두 시점(perCard 스냅샷)을 비교해서 "어떤 카드가 얼마나 움직였는지"를 짧은 코멘트로 만든다.
+// 예: "블래키 ex SAR ▲+15,000원, 마리오 하프일러 ▼-3,000원"
+function buildIssueComment(perCard, olderPerCard) {
+  const diffs = Object.keys(perCard)
+    .map(name => ({ name, diff: perCard[name] - (olderPerCard[name] ?? perCard[name]) }))
+    .filter(d => d.diff !== 0)
+    .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+  if (!diffs.length) return "";
+  const maxShow = 4;
+  const shown = diffs.slice(0, maxShow).map(d => `${d.name} ${d.diff > 0 ? "▲" : "▼"}${signedWon(d.diff)}`);
+  const rest = diffs.length - maxShow;
+  return shown.join(", ") + (rest > 0 ? ` 외 ${rest}건` : "");
+}
+// 포트폴리오 전체 평가금액이 시각별로 어떻게 바뀌었는지(변동액/변동률/그 시점 수익률)와,
+// 그 변동을 만든 카드가 무엇인지 짧은 코멘트로 함께 보여준다.
 function renderPortfolioHistoryModal() {
   const root = document.getElementById("historyModalRoot");
   if (!portfolioHistoryOpen) {
@@ -877,24 +901,28 @@ function renderPortfolioHistoryModal() {
     return;
   }
   const { totalBuy, points } = buildPortfolioHistory();
-  const sorted = [...points].sort((a, b) => new Date(b[0]) - new Date(a[0])); // 최신이 위로
+  const sorted = [...points].sort((a, b) => new Date(b.ts) - new Date(a.ts)); // 최신이 위로
   // 변동이 없는 회차는 목록에서 빼고, 실제로 값이 바뀐 시점만(그리고 맨 처음 기준 기록은 항상) 보여준다.
   const changedRows = sorted
-    .map((entry, idx) => {
-      const [ts, totalCur] = entry;
+    .map((point, idx) => {
       const older = sorted[idx + 1];
-      const rate = totalBuy ? ((totalCur - totalBuy) / totalBuy) * 100 : 0;
+      const rate = totalBuy ? ((point.totalCur - totalBuy) / totalBuy) * 100 : 0;
       if (!older) {
-        return { ts, totalCur, rate, issueHtml: `<span class="grade-tag" style="margin-top:0">최초 기록</span>`, hasChange: true };
+        return { ts: point.ts, totalCur: point.totalCur, rate, issueHtml: `<span class="grade-tag" style="margin-top:0">최초 기록</span>`, hasChange: true };
       }
-      const diff = totalCur - older[1];
+      const diff = point.totalCur - older.totalCur;
       if (diff === 0) {
-        return { ts, totalCur, rate, issueHtml: "", hasChange: false };
+        return { ts: point.ts, totalCur: point.totalCur, rate, issueHtml: "", hasChange: false };
       }
-      const pctVal = older[1] ? (diff / older[1]) * 100 : 0;
+      const pctVal = older.totalCur ? (diff / older.totalCur) * 100 : 0;
       const cls = diff > 0 ? "pos" : "neg";
       const arrow = diff > 0 ? "▲" : "▼";
-      return { ts, totalCur, rate, issueHtml: `<span class="${cls}">${arrow} ${signedWon(diff)} (${pct(pctVal)})</span>`, hasChange: true };
+      const comment = buildIssueComment(point.perCard, older.perCard);
+      const issueHtml = `
+        <div class="${cls}">${arrow} ${signedWon(diff)} (${pct(pctVal)})</div>
+        ${comment ? `<div class="history-issue-note">${comment}</div>` : ""}
+      `;
+      return { ts: point.ts, totalCur: point.totalCur, rate, issueHtml, hasChange: true };
     })
     .filter(row => row.hasChange);
   const rowsHtml = changedRows.length
