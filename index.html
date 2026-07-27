@@ -135,7 +135,6 @@
   .stack-sub { font-size: 11.5px; font-weight: 600; margin-left: 4px; }
   .last-trade-cell { font-size: 12.5px; color: var(--gray); }
   .last-trade-cell.stale { color: #b45309; }
-
   .dt-value.editable-wrap textarea {
     width: 100%;
     padding: 7px 9px;
@@ -168,7 +167,6 @@
   .dt-edit-save:hover { background: #1d4ed8; }
   .dt-edit-cancel { background: #fff; color: #374151; border: 1px solid var(--border); }
   .dt-edit-cancel:hover { background: var(--bg-soft); }
-
   .watchlist-section {
     margin-top: 32px;
     border: 1px solid var(--border);
@@ -259,7 +257,6 @@
   }
   footer b { color: #374151; }
   .sort-arrow { font-size: 10px; margin-left: 2px; }
-
   details.add-toggle summary {
     cursor: pointer;
     list-style: none;
@@ -433,7 +430,6 @@
     font-size: 12px;
     box-sizing: border-box;
   }
-
   /* Mobile overrides — kept last so they win over the base rules above */
   @media (max-width: 640px) {
     body { padding: 14px; font-size: 13px; }
@@ -459,11 +455,72 @@
     .btn { width: 100%; }
     table#watchlistTable { font-size: 12px; min-width: 620px; }
     .watchlist-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
+    .modal-panel { max-width: 100%; padding: 16px; }
   }
+  .history-open-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: #2563eb;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .history-open-btn:hover { background: var(--bg-soft); }
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .modal-panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  }
+  .modal-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .modal-head b { font-size: 15px; }
+  .modal-sub { color: var(--gray); font-size: 12px; margin-bottom: 14px; }
+  table.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  table.history-table thead th {
+    text-align: right;
+    padding: 6px 8px;
+    border-bottom: 2px solid #111827;
+    font-size: 11.5px;
+    color: #374151;
+    white-space: nowrap;
+  }
+  table.history-table thead th:first-child { text-align: left; }
+  table.history-table tbody td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    white-space: nowrap;
+  }
+  table.history-table tbody td:first-child { text-align: left; }
 </style>
 </head>
 <body>
-
 <div class="header-row">
   <div>
     <h1>🎴 포켓몬 카드 포트폴리오</h1>
@@ -474,7 +531,6 @@
     <div class="refresh-status" id="refreshStatus"></div>
   </div>
 </div>
-
 <div class="summary-grid">
   <div class="card">
     <div class="label">총 구매금액</div>
@@ -493,11 +549,12 @@
     <div class="value" id="sumRate">-</div>
   </div>
 </div>
-
+<div style="text-align:right; margin: -6px 0 16px 0;">
+  <button class="history-open-btn" id="portfolioHistoryBtn">📊 포트폴리오 히스토리 보기 →</button>
+</div>
 <div class="note-box">
   <b>계산 방식</b>: 스니커덩크 엔화 거래가 × 환율(자동 조회) × 1.10(한국 반입 시 관부가세 10%) = 실제 한국에서 이 카드를 사려면 드는 비용 기준. 등급은 전 카드 PSA10 기준입니다. <b>PSA10 Pop</b>은 PSA 공식 population report 기준 해당 카드의 PSA10 등급 전 세계 발급 수량입니다(2026-07-24 기준, 이후 계속 증가할 수 있음). <b>최근 거래일</b>은 SNKRDUNK 매매이력에서 확인된 가장 최근 PSA10 1장 거래가 이뤄진 날짜입니다(7일 이상 지났으면 주황색으로 표시). 표에서 카드 행을 클릭하면 바로 아래에 획득 경로·특징·평가·5년 후 가치 예상이 펼쳐집니다(평가/전망은 개인 추정치이며 투자 조언이 아닙니다). 카드별 시세 추이 아래에서 카드를 골라 개별 손익도 확인할 수 있습니다.
 </div>
-
 <div class="table-toolbar">
   <span class="grade-tag" id="sortHint">표 제목을 누르면 정렬돼요.</span>
   <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -522,7 +579,6 @@
   <tbody></tbody>
 </table>
 </div>
-
 <details class="add-toggle">
 <summary><h2 style="display:inline">➕ 카드 추가</h2></summary>
 <div class="add-section">
@@ -577,7 +633,6 @@
   </details>
 </div>
 </details>
-
 <div class="watchlist-section">
   <h2>🎯 관심 후보 카드</h2>
   <div class="watchlist-sub">아직 안 산, 사고 싶은 카드들을 여기 따로 적어두세요. 시세는 보유 카드와 똑같이 매일 자동 갱신됩니다. 손익 계산에는 포함되지 않아요.</div>
@@ -598,7 +653,6 @@
     <tbody></tbody>
   </table>
   </div>
-
   <details class="add-toggle" style="margin-top:20px">
     <summary><h2 style="display:inline; font-size:15px">➕ 후보 카드 추가</h2></summary>
     <div class="add-section">
@@ -651,7 +705,6 @@
     </div>
   </details>
 </div>
-
 <h2>📈 카드별 시세 추이</h2>
 <div class="chart-section">
   <div class="chart-controls">
@@ -664,18 +717,14 @@
   <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
   <div class="grade-tag" style="margin-top:8px">점선은 구매가입니다. 표시 구간은 SNKRDUNK에 남아있는 최근 거래 내역 범위로, 카드마다 거래량에 따라 기간이 다릅니다(거래가 활발한 카드는 최근 1~2일치만 조회됨).</div>
 </div>
-
 <script>
 let data = {};
-
 function cardNames(d) {
   return Object.keys(d).filter(k => k !== "_meta" && k !== "_watchlist");
 }
-
 function watchlistNames(d) {
   return Object.keys(d._watchlist || {});
 }
-
 function formatUpdatedAt(iso) {
   if (!iso) return "-";
   const d = new Date(iso);
@@ -684,7 +733,6 @@ function formatUpdatedAt(iso) {
   const pad = n => String(n).padStart(2, "0");
   return `${kst.getUTCFullYear()}-${pad(kst.getUTCMonth()+1)}-${pad(kst.getUTCDate())} ${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())} (KST)`;
 }
-
 function won(n) {
   if (n === null || n === undefined) return "-";
   return "₩" + Math.round(n).toLocaleString("ko-KR");
@@ -699,27 +747,23 @@ function pct(n) {
   const s = n >= 0 ? "+" : "";
   return s + n.toFixed(1) + "%";
 }
-
 // value가 전체 ISO datetime("...T...")이면 시/분 단위까지, 날짜만("YYYY-MM-DD")이면
 // 일 단위까지 상대 시간을 계산해서 { label, days } 형태로 반환.
 function timeAgoLabel(value) {
   if (!value) return null;
   const now = new Date();
-
   if (value.includes("T")) {
     const tradeDate = new Date(value);
     const diffMs = now - tradeDate;
     const diffMin = Math.floor(diffMs / 60000);
     const diffHr = Math.floor(diffMs / 3600000);
     const diffDay = Math.floor(diffMs / 86400000);
-
     if (diffMs < 60 * 1000) return { label: "방금 전", days: 0 };
     if (diffMin < 60) return { label: `${diffMin}분 전`, days: 0 };
     if (diffHr < 24) return { label: `${diffHr}시간 전`, days: 0 };
     if (diffDay <= 30) return { label: `${diffDay}일 전`, days: diffDay };
     return { label: tradeDate.toISOString().slice(0, 10), days: diffDay };
   }
-
   const todayStr = now.toISOString().slice(0, 10);
   const tradeDate = new Date(value + "T00:00:00Z");
   const diffDay = Math.round((new Date(todayStr + "T00:00:00Z") - tradeDate) / 86400000);
@@ -730,14 +774,12 @@ function timeAgoLabel(value) {
   else label = value;
   return { label, days: diffDay };
 }
-
 function formatLastTrade(value) {
   const info = timeAgoLabel(value);
   if (!info) return `<span class="last-trade-cell">정보없음</span>`;
   const staleClass = info.days >= 7 ? "stale" : "";
   return `<span class="last-trade-cell ${staleClass}">${info.label}</span>`;
 }
-
 let rows = [];
 function buildRows() {
   rows = cardNames(data).map(name => {
@@ -750,11 +792,9 @@ function buildRows() {
     return { name, grade: d.grade, buy: d.buy, cur, diff, rate, pop, lastTrade };
   });
 }
-
 let sortKey = null, sortAsc = true;
 let reorderMode = false;
 let expandedName = null;
-
 function detailRowHtml(name) {
   const d = data[name];
   if (!d) return "";
@@ -787,7 +827,108 @@ function detailRowHtml(name) {
     </tr>
   `;
 }
-
+function formatDateTimeKST(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  const kst = new Date(d.getTime() + 9 * 3600 * 1000);
+  const pad = n => String(n).padStart(2, "0");
+  return `${kst.getUTCFullYear()}-${pad(kst.getUTCMonth()+1)}-${pad(kst.getUTCDate())} ${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())}`;
+}
+let portfolioHistoryOpen = false;
+function openPortfolioHistoryModal() {
+  portfolioHistoryOpen = true;
+  renderPortfolioHistoryModal();
+}
+function closePortfolioHistoryModal() {
+  portfolioHistoryOpen = false;
+  renderPortfolioHistoryModal();
+}
+// 카드마다 매 실행(보통 1시간 간격)마다 (시각, 가격) 기록이 쌓이는데, 한 번의 스크립트 실행에서는
+// 모든 카드가 같은 시각(now)을 공유하므로, 그 시각들을 모아서 "그 시점의 포트폴리오 총 평가금액"을
+// 계산한다. 특정 카드가 그 회차에 스크래핑 실패했으면 그 카드는 마지막으로 알려진 가격을 그대로 이어쓴다.
+function buildPortfolioHistory() {
+  const names = cardNames(data);
+  const totalBuy = names.reduce((s, n) => s + data[n].buy, 0);
+  const historyMaps = {};
+  const tsSet = new Set();
+  names.forEach(n => {
+    const h = Array.isArray(data[n].history) ? data[n].history : [];
+    historyMaps[n] = new Map(h.map(([ts, price]) => [ts, price]));
+    h.forEach(([ts]) => tsSet.add(ts));
+  });
+  const timestamps = Array.from(tsSet).sort((a, b) => new Date(a) - new Date(b));
+  const lastKnown = {};
+  names.forEach(n => { lastKnown[n] = data[n].buy; }); // 첫 기록 이전엔 구매가로 대체
+  const points = timestamps.map(ts => {
+    names.forEach(n => {
+      const price = historyMaps[n].get(ts);
+      if (price !== undefined) lastKnown[n] = price;
+    });
+    const totalCur = names.reduce((s, n) => s + lastKnown[n], 0);
+    return [ts, totalCur];
+  });
+  return { totalBuy, points };
+}
+// 포트폴리오 전체 평가금액이 시각별로 어떻게 바뀌었는지(변동액/변동률/그 시점 수익률)를 보여준다.
+function renderPortfolioHistoryModal() {
+  const root = document.getElementById("historyModalRoot");
+  if (!portfolioHistoryOpen) {
+    root.innerHTML = "";
+    return;
+  }
+  const { totalBuy, points } = buildPortfolioHistory();
+  const sorted = [...points].sort((a, b) => new Date(b[0]) - new Date(a[0])); // 최신이 위로
+  // 변동이 없는 회차는 목록에서 빼고, 실제로 값이 바뀐 시점만(그리고 맨 처음 기준 기록은 항상) 보여준다.
+  const changedRows = sorted
+    .map((entry, idx) => {
+      const [ts, totalCur] = entry;
+      const older = sorted[idx + 1];
+      const rate = totalBuy ? ((totalCur - totalBuy) / totalBuy) * 100 : 0;
+      if (!older) {
+        return { ts, totalCur, rate, issueHtml: `<span class="grade-tag" style="margin-top:0">최초 기록</span>`, hasChange: true };
+      }
+      const diff = totalCur - older[1];
+      if (diff === 0) {
+        return { ts, totalCur, rate, issueHtml: "", hasChange: false };
+      }
+      const pctVal = older[1] ? (diff / older[1]) * 100 : 0;
+      const cls = diff > 0 ? "pos" : "neg";
+      const arrow = diff > 0 ? "▲" : "▼";
+      return { ts, totalCur, rate, issueHtml: `<span class="${cls}">${arrow} ${signedWon(diff)} (${pct(pctVal)})</span>`, hasChange: true };
+    })
+    .filter(row => row.hasChange);
+  const rowsHtml = changedRows.length
+    ? changedRows.map(row => `
+        <tr>
+          <td>${formatDateTimeKST(row.ts)}</td>
+          <td>${won(row.totalCur)}</td>
+          <td>${row.issueHtml}</td>
+          <td class="${row.rate >= 0 ? 'pos' : 'neg'}">${pct(row.rate)}</td>
+        </tr>
+      `).join("")
+    : `<tr><td colspan="4" style="text-align:center; color:var(--gray)">아직 기록된 히스토리가 없어요. 다음 자동 갱신부터 시각별로 쌓여요.</td></tr>`;
+  root.innerHTML = `
+    <div class="modal-backdrop" id="historyModalBackdrop">
+      <div class="modal-panel">
+        <div class="modal-head">
+          <b>포트폴리오 히스토리</b>
+          <button class="detail-close" id="historyModalClose">✕ 닫기</button>
+        </div>
+        <div class="modal-sub">전체 카드 평가금액 합계가 실제로 바뀐 시점만 모아서 보여줘요(변동 없는 회차는 자동으로 숨김).</div>
+        <table class="history-table">
+          <thead>
+            <tr><th>시각(KST)</th><th>총 평가금액</th><th>변동</th><th>수익률</th></tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  document.getElementById("historyModalClose").addEventListener("click", closePortfolioHistoryModal);
+  document.getElementById("historyModalBackdrop").addEventListener("click", (e) => {
+    if (e.target.id === "historyModalBackdrop") closePortfolioHistoryModal();
+  });
+}
 function renderTable() {
   const tbody = document.querySelector("#cardTable tbody");
   let list = [...rows];
@@ -826,7 +967,6 @@ function renderTable() {
     const detail = r.name === expandedName ? detailRowHtml(r.name) : "";
     return mainRow + detail;
   }).join("");
-
   tbody.querySelectorAll("tr[data-name]").forEach(tr => {
     tr.addEventListener("click", () => {
       if (reorderMode) return;
@@ -851,13 +991,11 @@ function renderTable() {
       renderTable();
     });
   });
-
   // 재정렬/추가/삭제 등으로 카드가 사라졌다면 펼침 상태 해제
   if (expandedName && !list.some(r => r.name === expandedName)) {
     expandedName = null;
   }
 }
-
 let sortableInstance = null;
 function enableRowDrag() {
   const tbody = document.querySelector("#cardTable tbody");
@@ -875,7 +1013,6 @@ function enableRowDrag() {
 function disableRowDrag() {
   if (sortableInstance) { sortableInstance.destroy(); sortableInstance = null; }
 }
-
 const reorderToggleBtn = document.getElementById("reorderToggleBtn");
 reorderToggleBtn.addEventListener("click", () => {
   reorderMode = !reorderMode;
@@ -889,7 +1026,6 @@ reorderToggleBtn.addEventListener("click", () => {
     renderTable();
   }
 });
-
 const resetSortBtn = document.getElementById("resetSortBtn");
 resetSortBtn.addEventListener("click", () => {
   sortKey = null;
@@ -897,7 +1033,6 @@ resetSortBtn.addEventListener("click", () => {
   resetSortBtn.style.display = "none";
   renderTable();
 });
-
 document.querySelectorAll("#cardTable thead th[data-key]").forEach(th => {
   th.addEventListener("click", () => {
     const key = th.dataset.key;
@@ -908,7 +1043,6 @@ document.querySelectorAll("#cardTable thead th[data-key]").forEach(th => {
     renderTable();
   });
 });
-
 const select = document.getElementById("cardSelect");
 function buildSelect() {
   select.innerHTML = "";
@@ -918,7 +1052,6 @@ function buildSelect() {
     select.appendChild(opt);
   });
 }
-
 let chart = null;
 function renderChart(name) {
   const d = data[name];
@@ -928,12 +1061,10 @@ function renderChart(name) {
   const cur = values[values.length-1];
   const diff = cur - d.buy;
   const rate = diff / d.buy * 100;
-
   const popText = typeof d.psa10Pop === "number" ? ` · PSA10 Pop ${d.psa10Pop.toLocaleString("ko-KR")}장` : "";
   document.getElementById("chartStats").innerHTML =
     `구매가 ${won(d.buy)} → 현재가 ${won(cur)} · <span class="${diff>=0?'pos':'neg'}">${signedWon(diff)} (${pct(rate)})</span>${popText}`;
   document.getElementById("chartLink").href = data[name].url;
-
   const ctx = document.getElementById("trendChart").getContext("2d");
   if (chart) chart.destroy();
   chart = new Chart(ctx, {
@@ -972,16 +1103,13 @@ function renderChart(name) {
     }
   });
 }
-
 select.addEventListener("change", () => renderChart(select.value));
-
 function renderSummary() {
   const names = cardNames(data);
   let buy = 0, cur = 0;
   names.forEach(n => { buy += data[n].buy; cur += data[n].series[data[n].series.length-1][1]; });
   const diff = cur - buy;
   const rate = diff / buy * 100;
-
   document.getElementById("sumBuy").textContent = won(buy);
   document.getElementById("sumCur").textContent = won(cur);
   const diffEl = document.getElementById("sumDiff");
@@ -990,16 +1118,13 @@ function renderSummary() {
   const rateEl = document.getElementById("sumRate");
   rateEl.textContent = pct(rate);
   rateEl.className = "value " + (rate >= 0 ? "pos" : "neg");
-
   document.getElementById("lastUpdated").textContent = formatUpdatedAt(data._meta && data._meta.updatedAt);
   document.getElementById("cardCount").textContent = names.length;
 }
-
 // ---- GitHub 연결 설정 (localStorage에만 저장) ----
 const ghOwnerEl = document.getElementById("ghOwner");
 const ghRepoEl = document.getElementById("ghRepo");
 const ghTokenEl = document.getElementById("ghToken");
-
 function loadGhSettings() {
   ghOwnerEl.value = localStorage.getItem("gh_owner") || "myj8755-ops";
   ghRepoEl.value = localStorage.getItem("gh_repo") || "MYTCG";
@@ -1012,14 +1137,12 @@ function loadGhSettings() {
     localStorage.setItem("gh_token", ghTokenEl.value.trim());
   });
 });
-
 function utf8ToB64(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
 function b64ToUtf8(str) {
   return decodeURIComponent(escape(atob(str.replace(/\n/g, ""))));
 }
-
 // ---- 관심 후보 카드 (워치리스트) ----
 function watchlistRows() {
   return watchlistNames(data).map(name => {
@@ -1038,10 +1161,8 @@ function watchlistRows() {
     };
   });
 }
-
 let expandedWlName = null;
 let wlEvalEditing = false;
-
 function watchlistDetailRowHtml(r) {
   const evalValueHtml = wlEvalEditing
     ? `
@@ -1059,7 +1180,6 @@ function watchlistDetailRowHtml(r) {
         <button class="dt-edit-link" data-wl-eval-edit="${r.name}">✎ 수정</button>
       </div>
     `;
-
   return `
     <tr class="detail-row" data-wl-detail-for="${r.name}">
       <td colspan="8">
@@ -1082,20 +1202,16 @@ function watchlistDetailRowHtml(r) {
     </tr>
   `;
 }
-
 function renderWatchlist() {
   const tbody = document.querySelector("#watchlistTable tbody");
   const rows = watchlistRows();
-
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="8"><div class="watchlist-empty">아직 등록된 후보 카드가 없어요. 아래 "➕ 후보 카드 추가"에서 추가해보세요.</div></td></tr>`;
     return;
   }
-
   if (expandedWlName && !rows.some(r => r.name === expandedWlName)) {
     expandedWlName = null;
   }
-
   tbody.innerHTML = rows.map(r => {
     let gapHtml = "-";
     if (r.target && r.cur !== null) {
@@ -1105,7 +1221,6 @@ function renderWatchlist() {
         ? `<span class="gap-hit">목표가 도달! (${pct(gapPct)})</span>`
         : `<span class="gap-wait">목표가까지 +${gapPct.toFixed(1)}%</span>`;
     }
-
     const mainRow = `
     <tr data-wl-name="${r.name}" class="${r.name === expandedWlName ? 'active-row' : ''}">
       <td>
@@ -1123,7 +1238,6 @@ function renderWatchlist() {
     const detail = r.name === expandedWlName ? watchlistDetailRowHtml(r) : "";
     return mainRow + detail;
   }).join("");
-
   tbody.querySelectorAll("tr[data-wl-name]").forEach(tr => {
     tr.addEventListener("click", () => {
       const name = tr.dataset.wlName;
@@ -1174,12 +1288,10 @@ function renderWatchlist() {
     });
   });
 }
-
 async function addCandidateToGithub() {
   const statusEl = document.getElementById("wlAddStatus");
   statusEl.className = "add-status";
   statusEl.textContent = "";
-
   const name = document.getElementById("wlAddName").value.trim();
   const setInfo = document.getElementById("wlAddGrade").value.trim();
   const gradeChoice = document.getElementById("wlAddGradeSelect").value;
@@ -1192,7 +1304,6 @@ async function addCandidateToGithub() {
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
-
   if (!name || !setInfo || !url) {
     statusEl.className = "add-status err";
     statusEl.textContent = "카드명·등급·SNKRDUNK 링크는 필수예요.";
@@ -1208,21 +1319,17 @@ async function addCandidateToGithub() {
     statusEl.textContent = "이미 같은 이름의 후보 카드가 있습니다.";
     return;
   }
-
   statusEl.textContent = "GitHub에 저장하는 중...";
-
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
   const headers = {
     "Authorization": `Bearer ${token}`,
     "Accept": "application/vnd.github+json",
   };
-
   try {
     const getRes = await fetch(apiUrl, { headers });
     if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
     const getJson = await getRes.json();
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
-
     if (!currentData._watchlist) currentData._watchlist = {};
     const entry = { grade, url, series: [] };
     if (targetRaw) entry.targetPrice = parseInt(targetRaw, 10);
@@ -1230,7 +1337,6 @@ async function addCandidateToGithub() {
     if (memo) entry.memo = memo;
     if (evaluation) entry.evaluation = evaluation;
     currentData._watchlist[name] = entry;
-
     const putRes = await fetch(apiUrl, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
@@ -1244,10 +1350,8 @@ async function addCandidateToGithub() {
       const errJson = await putRes.json().catch(() => ({}));
       throw new Error(`저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
     }
-
     data = currentData;
     renderWatchlist();
-
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 후보 카드가 추가됐습니다. 다음 자동 갱신 때 시세가 채워집니다.`;
     ["wlAddName", "wlAddGrade", "wlAddTarget", "wlAddPop", "wlAddMemo", "wlAddUrl", "wlAddEval"].forEach(id => document.getElementById(id).value = "");
@@ -1257,16 +1361,13 @@ async function addCandidateToGithub() {
     statusEl.textContent = e.message;
   }
 }
-
 document.getElementById("wlAddSubmit").addEventListener("click", addCandidateToGithub);
-
 async function deleteCandidateFromGithub(name) {
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
   const statusEl = document.getElementById("wlAddStatus");
   const watchlistToggle = document.querySelectorAll("details.add-toggle")[1];
-
   if (!owner || !repo || !token) {
     if (watchlistToggle) watchlistToggle.open = true;
     statusEl.className = "add-status err";
@@ -1274,28 +1375,23 @@ async function deleteCandidateFromGithub(name) {
     return;
   }
   if (!confirm(`"${name}" 후보 카드를 삭제할까요?`)) return;
-
   if (watchlistToggle) watchlistToggle.open = true;
   statusEl.className = "add-status";
   statusEl.textContent = `"${name}" 삭제하는 중...`;
-
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
   const headers = {
     "Authorization": `Bearer ${token}`,
     "Accept": "application/vnd.github+json",
   };
-
   try {
     const getRes = await fetch(apiUrl, { headers });
     if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
     const getJson = await getRes.json();
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
-
     if (!currentData._watchlist || !currentData._watchlist[name]) {
       throw new Error("이미 삭제되었거나 존재하지 않는 후보 카드입니다.");
     }
     delete currentData._watchlist[name];
-
     const putRes = await fetch(apiUrl, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
@@ -1309,10 +1405,8 @@ async function deleteCandidateFromGithub(name) {
       const errJson = await putRes.json().catch(() => ({}));
       throw new Error(`삭제 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
     }
-
     data = currentData;
     renderWatchlist();
-
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 후보 카드가 삭제됐습니다.`;
   } catch (e) {
@@ -1320,47 +1414,39 @@ async function deleteCandidateFromGithub(name) {
     statusEl.textContent = e.message;
   }
 }
-
 async function saveEvaluationToGithub(name, newText) {
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
   const statusEl = document.getElementById("wlAddStatus");
   const watchlistToggle = document.querySelectorAll("details.add-toggle")[1];
-
   if (!owner || !repo || !token) {
     if (watchlistToggle) watchlistToggle.open = true;
     statusEl.className = "add-status err";
     statusEl.textContent = "평가를 저장하려면 위쪽 GitHub 연결 설정을 먼저 입력해주세요.";
     return;
   }
-
   const saveBtn = document.querySelector(`[data-wl-eval-save="${CSS.escape(name)}"]`);
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "저장 중..."; }
-
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
   const headers = {
     "Authorization": `Bearer ${token}`,
     "Accept": "application/vnd.github+json",
   };
-
   try {
     const getRes = await fetch(apiUrl, { headers });
     if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
     const getJson = await getRes.json();
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
-
     if (!currentData._watchlist || !currentData._watchlist[name]) {
       throw new Error("이미 삭제되었거나 존재하지 않는 후보 카드입니다.");
     }
-
     const trimmed = newText.trim();
     if (trimmed) {
       currentData._watchlist[name].evaluation = trimmed;
     } else {
       delete currentData._watchlist[name].evaluation;
     }
-
     const putRes = await fetch(apiUrl, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
@@ -1374,11 +1460,9 @@ async function saveEvaluationToGithub(name, newText) {
       const errJson = await putRes.json().catch(() => ({}));
       throw new Error(`저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
     }
-
     data = currentData;
     wlEvalEditing = false;
     renderWatchlist();
-
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 평가가 저장됐습니다.`;
   } catch (e) {
@@ -1387,12 +1471,10 @@ async function saveEvaluationToGithub(name, newText) {
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "저장"; }
   }
 }
-
 async function addCardToGithub() {
   const statusEl = document.getElementById("addStatus");
   statusEl.className = "add-status";
   statusEl.textContent = "";
-
   const name = document.getElementById("addName").value.trim();
   const setInfo = document.getElementById("addGrade").value.trim();
   const gradeChoice = document.getElementById("addGradeSelect").value;
@@ -1403,7 +1485,6 @@ async function addCardToGithub() {
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
-
   if (!name || !setInfo || !url || isNaN(buy) || isNaN(cur)) {
     statusEl.className = "add-status err";
     statusEl.textContent = "모든 항목을 채워주세요.";
@@ -1419,24 +1500,19 @@ async function addCardToGithub() {
     statusEl.textContent = "이미 같은 이름의 카드가 있습니다.";
     return;
   }
-
   statusEl.textContent = "GitHub에 저장하는 중...";
-
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
   const headers = {
     "Authorization": `Bearer ${token}`,
     "Accept": "application/vnd.github+json",
   };
-
   try {
     const getRes = await fetch(apiUrl, { headers });
     if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
     const getJson = await getRes.json();
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
-
     const today = new Date().toISOString().slice(0, 10);
     currentData[name] = { buy, grade, url, series: [[today, cur]] };
-
     const putRes = await fetch(apiUrl, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
@@ -1450,14 +1526,12 @@ async function addCardToGithub() {
       const errJson = await putRes.json().catch(() => ({}));
       throw new Error(`저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
     }
-
     data = currentData;
     renderSummary();
     buildRows();
     renderTable();
     buildSelect();
     renderChart(name);
-
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 카드가 추가됐습니다. 1~2분 뒤 사이트에도 반영됩니다.`;
     ["addName","addGrade","addBuy","addCur","addUrl"].forEach(id => document.getElementById(id).value = "");
@@ -1467,17 +1541,13 @@ async function addCardToGithub() {
     statusEl.textContent = e.message;
   }
 }
-
 document.getElementById("addSubmit").addEventListener("click", addCardToGithub);
-
 async function deleteCardFromGithub(name) {
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
-
   const statusEl = document.getElementById("addStatus");
   const toggle = document.querySelector("details.add-toggle");
-
   if (!owner || !repo || !token) {
     toggle.open = true;
     statusEl.className = "add-status err";
@@ -1485,29 +1555,24 @@ async function deleteCardFromGithub(name) {
     return;
   }
   if (!confirm(`"${name}" 카드를 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
-
   toggle.open = true;
   statusEl.className = "add-status";
   statusEl.textContent = `"${name}" 삭제하는 중...`;
-
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
   const headers = {
     "Authorization": `Bearer ${token}`,
     "Accept": "application/vnd.github+json",
   };
-
   try {
     const getRes = await fetch(apiUrl, { headers });
     if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
     const getJson = await getRes.json();
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
-
     if (!currentData[name]) {
       throw new Error("이미 삭제되었거나 존재하지 않는 카드입니다.");
     }
     delete currentData[name];
     currentData._meta = { updatedAt: new Date().toISOString() };
-
     const putRes = await fetch(apiUrl, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
@@ -1521,7 +1586,6 @@ async function deleteCardFromGithub(name) {
       const errJson = await putRes.json().catch(() => ({}));
       throw new Error(`삭제 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
     }
-
     data = currentData;
     renderSummary();
     buildRows();
@@ -1529,7 +1593,6 @@ async function deleteCardFromGithub(name) {
     buildSelect();
     const remaining = cardNames(data);
     if (remaining.length) renderChart(remaining[0]);
-
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 카드가 삭제됐습니다. 1~2분 뒤 사이트에도 반영됩니다.`;
   } catch (e) {
@@ -1537,17 +1600,14 @@ async function deleteCardFromGithub(name) {
     statusEl.textContent = e.message;
   }
 }
-
 let reorderBusy = false;
 async function saveOrderToGithub(newNames) {
   if (reorderBusy) return;
-
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
   const statusEl = document.getElementById("addStatus");
   const toggle = document.querySelector("details.add-toggle");
-
   if (!owner || !repo || !token) {
     toggle.open = true;
     statusEl.className = "add-status err";
@@ -1555,34 +1615,28 @@ async function saveOrderToGithub(newNames) {
     renderTable();
     return;
   }
-
   reorderBusy = true;
   toggle.open = true;
   statusEl.className = "add-status";
   statusEl.textContent = "순서를 저장하는 중...";
-
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
   const headers = {
     "Authorization": `Bearer ${token}`,
     "Accept": "application/vnd.github+json",
   };
-
   try {
     const getRes = await fetch(apiUrl, { headers });
     if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
     const getJson = await getRes.json();
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
-
     // 드래그 이후 순서를 기준으로 최신 data.json의 카드들을 재배열.
     // (드래그 중에 다른 곳에서 카드가 추가/삭제됐다면 그 카드는 맨 뒤에 붙임)
     const known = new Set(cardNames(currentData));
     const finalOrder = newNames.filter(n => known.has(n));
     known.forEach(n => { if (!finalOrder.includes(n)) finalOrder.push(n); });
-
     const reordered = {};
     finalOrder.forEach(n => { reordered[n] = currentData[n]; });
     reordered._meta = { updatedAt: new Date().toISOString() };
-
     const putRes = await fetch(apiUrl, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
@@ -1596,14 +1650,12 @@ async function saveOrderToGithub(newNames) {
       const errJson = await putRes.json().catch(() => ({}));
       throw new Error(`순서 저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
     }
-
     data = reordered;
     renderSummary();
     buildRows();
     renderTable();
     buildSelect();
     if (reorderMode) enableRowDrag();
-
     statusEl.className = "add-status ok";
     statusEl.textContent = "순서가 저장됐습니다. 1~2분 뒤 사이트에도 반영됩니다.";
   } catch (e) {
@@ -1615,59 +1667,48 @@ async function saveOrderToGithub(newNames) {
     reorderBusy = false;
   }
 }
-
 // ---- 수동 업데이트 버튼: GitHub Actions 스크래핑 워크플로우 즉시 실행 + 실시간 카운터 ----
 const refreshBtn = document.getElementById("refreshBtn");
 const refreshStatus = document.getElementById("refreshStatus");
 const WORKFLOW_FILE = "update-prices.yml"; // .github/workflows/ 안의 실제 파일명과 다르면 이 값을 바꿔주세요
-
 let refreshTimerInterval = null;
 let refreshPollInterval = null;
 let refreshStartTime = null;
-
 function formatElapsed(ms) {
   const totalSec = Math.floor(ms / 1000);
   const m = Math.floor(totalSec / 60);
   const s = totalSec % 60;
   return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }
-
 function stopRefreshTimers() {
   if (refreshTimerInterval) { clearInterval(refreshTimerInterval); refreshTimerInterval = null; }
   if (refreshPollInterval) { clearInterval(refreshPollInterval); refreshPollInterval = null; }
 }
-
 refreshBtn.addEventListener("click", async () => {
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
-
   if (!owner || !repo || !token) {
     document.querySelector("details.add-toggle").open = true;
     refreshStatus.className = "refresh-status err";
     refreshStatus.textContent = "먼저 아래 GitHub 연결 설정을 입력해주세요.";
     return;
   }
-
   const headers = {
     "Authorization": `Bearer ${token}`,
     "Accept": "application/vnd.github+json",
   };
-
   refreshBtn.disabled = true;
   refreshBtn.innerHTML = '<span class="spin"></span> 업데이트 중';
   refreshStatus.className = "refresh-status";
   refreshStatus.innerHTML = `실행 요청 중... <span class="timer">00:00</span>`;
-
   const dispatchTime = new Date();
   refreshStartTime = Date.now();
-
   // 1초마다 경과 시간 표시 갱신
   refreshTimerInterval = setInterval(() => {
     const el = refreshStatus.querySelector(".timer");
     if (el) el.textContent = formatElapsed(Date.now() - refreshStartTime);
   }, 1000);
-
   try {
     const dispatchRes = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
@@ -1677,9 +1718,7 @@ refreshBtn.addEventListener("click", async () => {
       const err = await dispatchRes.json().catch(() => ({}));
       throw new Error(`실행 요청 실패 (${dispatchRes.status}): ${err.message || "알 수 없는 오류"}`);
     }
-
     refreshStatus.innerHTML = `업데이트 진행 중... <span class="timer">00:00</span> (보통 2~3분 소요)`;
-
     // 5초마다 워크플로우 실행 상태를 폴링해서, 완료되면 최신 data.json을 다시 불러옴
     let matchedRunId = null;
     refreshPollInterval = setInterval(async () => {
@@ -1691,22 +1730,18 @@ refreshBtn.addEventListener("click", async () => {
         if (!runsRes.ok) return;
         const runsJson = await runsRes.json();
         const runs = runsJson.workflow_runs || [];
-
         if (!matchedRunId) {
           const candidate = runs.find(r => new Date(r.created_at) >= new Date(dispatchTime.getTime() - 5000));
           if (candidate) matchedRunId = candidate.id;
         }
         if (!matchedRunId) return;
-
         const run = runs.find(r => r.id === matchedRunId);
         if (!run) return;
-
         if (run.status === "completed") {
           stopRefreshTimers();
           const elapsed = formatElapsed(Date.now() - refreshStartTime);
           refreshBtn.disabled = false;
           refreshBtn.textContent = "🔄 지금 업데이트";
-
           if (run.conclusion === "success") {
             const res = await fetch("./data.json", { cache: "no-store" });
             data = await res.json();
@@ -1717,7 +1752,6 @@ refreshBtn.addEventListener("click", async () => {
             const first = cardNames(data)[0];
             if (first) renderChart(document.getElementById("cardSelect").value || first);
             renderWatchlist();
-
             refreshStatus.className = "refresh-status ok";
             let countdown = 3;
             refreshStatus.innerHTML = `업데이트 완료! (${elapsed} 소요) · <span class="timer">${countdown}초</span> 후 새로고침...`;
@@ -1739,7 +1773,6 @@ refreshBtn.addEventListener("click", async () => {
         // 폴링 중 일시적 오류는 무시하고 다음 주기에 재시도
       }
     }, 5000);
-
     // 8분 넘게 안 끝나면 폴링을 그만두고 안내만 표시 (무한 대기 방지)
     setTimeout(() => {
       if (refreshPollInterval) {
@@ -1750,7 +1783,6 @@ refreshBtn.addEventListener("click", async () => {
         refreshStatus.textContent = "시간이 오래 걸리고 있어요. Actions 탭에서 직접 확인해주세요.";
       }
     }, 8 * 60 * 1000);
-
   } catch (e) {
     stopRefreshTimers();
     refreshBtn.disabled = false;
@@ -1759,7 +1791,7 @@ refreshBtn.addEventListener("click", async () => {
     refreshStatus.textContent = e.message;
   }
 });
-
+document.getElementById("portfolioHistoryBtn").addEventListener("click", openPortfolioHistoryModal);
 async function init() {
   loadGhSettings();
   const res = await fetch("./data.json", { cache: "no-store" });
@@ -1773,12 +1805,11 @@ async function init() {
 }
 init();
 </script>
-
 <footer>
   <b>데이터 출처</b>: SNKRDUNK(스니커덩크) 각 카드 상세 페이지의 매매이력(売買履歴), PSA10·1장 거래만 집계.<br>
   <b>환산 방식</b>: 엔화 거래가 × 환율(자동 조회) × 1.10(관부가세) = 한국에서 실제 구매 시 드는 비용 기준.<br>
   <b>갱신 방법</b>: GitHub Actions가 매일 자동으로 스니커덩크를 조회해 data.json을 갱신합니다(보유 카드 + 관심 후보 카드 모두 포함). 우측 상단 "지금 업데이트" 버튼으로 즉시 실행하거나, Actions 탭에서 수동 실행도 가능합니다.
 </footer>
-
+<div id="historyModalRoot"></div>
 </body>
 </html>
