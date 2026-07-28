@@ -416,6 +416,11 @@
   .detail-item .dt-value { font-size: 13px; line-height: 1.7; color: #111827; }
   details.gh-settings { margin-top: 12px; font-size: 12.5px; }
   details.gh-settings summary { cursor: pointer; color: var(--gray); }
+  details.gh-settings-standalone {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
   .gh-settings-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 2fr;
@@ -630,17 +635,6 @@
     <button class="btn" id="addSubmit">GitHub에 저장</button>
     <span class="add-status" id="addStatus"></span>
   </div>
-  <details class="gh-settings">
-    <summary>GitHub 연결 설정 (최초 1회만 입력하면 저장됩니다)</summary>
-    <div class="gh-settings-grid">
-      <input type="text" id="ghOwner" placeholder="저장소 소유자 (예: myj8755-ops)">
-      <input type="text" id="ghRepo" placeholder="저장소 이름 (예: MYTCG)">
-      <input type="password" id="ghToken" placeholder="Personal Access Token">
-    </div>
-    <div class="grade-tag" style="margin-top:6px">
-      토큰은 이 브라우저에만 저장되고 서버로 전송되지 않습니다(GitHub API에만 직접 사용). GitHub → 우측 상단 프로필 → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 이 저장소만 선택하고 Contents 권한과 Actions 권한을 모두 Read and write로 발급하세요.
-    </div>
-  </details>
 </div>
 </details>
 <div class="watchlist-section">
@@ -1164,6 +1158,14 @@ function loadGhSettings() {
     localStorage.setItem("gh_token", ghTokenEl.value.trim());
   });
 });
+// GitHub 연결 설정은 이제 페이지 맨 아래(하나의 공용 섹션)에 있어서,
+// 어디서 필요해지든 그 섹션을 펼치고 화면에 보이게 스크롤해준다.
+function openGithubSettings() {
+  const el = document.querySelector("details.gh-settings-standalone");
+  if (!el) return;
+  el.open = true;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 function utf8ToB64(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
@@ -1337,8 +1339,9 @@ async function addCandidateToGithub() {
     return;
   }
   if (!owner || !repo || !token) {
+    openGithubSettings();
     statusEl.className = "add-status err";
-    statusEl.textContent = "아래 GitHub 연결 설정을 먼저 입력해주세요.";
+    statusEl.textContent = "GitHub 연결 설정을 먼저 입력해주세요(페이지 맨 아래).";
     return;
   }
   if (data._watchlist && data._watchlist[name]) {
@@ -1394,15 +1397,15 @@ async function deleteCandidateFromGithub(name) {
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
   const statusEl = document.getElementById("wlAddStatus");
-  const watchlistToggle = document.querySelectorAll("details.add-toggle")[1];
   if (!owner || !repo || !token) {
-    if (watchlistToggle) watchlistToggle.open = true;
+    openGithubSettings();
     statusEl.className = "add-status err";
-    statusEl.textContent = "삭제하려면 위쪽 GitHub 연결 설정을 먼저 입력해주세요.";
+    statusEl.textContent = "삭제하려면 GitHub 연결 설정을 먼저 입력해주세요(페이지 맨 아래).";
     return;
   }
   if (!confirm(`"${name}" 후보 카드를 삭제할까요?`)) return;
-  if (watchlistToggle) watchlistToggle.open = true;
+  const watchlistToggle = document.querySelectorAll("details.add-toggle")[1];
+  if (watchlistToggle) watchlistToggle.open = true; // 진행 상태(wlAddStatus)가 그 안에 있어서 펼쳐줌
   statusEl.className = "add-status";
   statusEl.textContent = `"${name}" 삭제하는 중...`;
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
@@ -1446,11 +1449,10 @@ async function saveEvaluationToGithub(name, newText) {
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
   const statusEl = document.getElementById("wlAddStatus");
-  const watchlistToggle = document.querySelectorAll("details.add-toggle")[1];
   if (!owner || !repo || !token) {
-    if (watchlistToggle) watchlistToggle.open = true;
+    openGithubSettings();
     statusEl.className = "add-status err";
-    statusEl.textContent = "평가를 저장하려면 위쪽 GitHub 연결 설정을 먼저 입력해주세요.";
+    statusEl.textContent = "평가를 저장하려면 GitHub 연결 설정을 먼저 입력해주세요(페이지 맨 아래).";
     return;
   }
   const saveBtn = document.querySelector(`[data-wl-eval-save="${CSS.escape(name)}"]`);
@@ -1518,8 +1520,9 @@ async function addCardToGithub() {
     return;
   }
   if (!owner || !repo || !token) {
+    openGithubSettings();
     statusEl.className = "add-status err";
-    statusEl.textContent = "아래 GitHub 연결 설정을 먼저 입력해주세요.";
+    statusEl.textContent = "GitHub 연결 설정을 먼저 입력해주세요(페이지 맨 아래).";
     return;
   }
   if (data[name]) {
@@ -1574,15 +1577,14 @@ async function deleteCardFromGithub(name) {
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
   const statusEl = document.getElementById("addStatus");
-  const toggle = document.querySelector("details.add-toggle");
   if (!owner || !repo || !token) {
-    toggle.open = true;
+    openGithubSettings();
     statusEl.className = "add-status err";
-    statusEl.textContent = "삭제하려면 아래 GitHub 연결 설정을 먼저 입력해주세요.";
+    statusEl.textContent = "삭제하려면 GitHub 연결 설정을 먼저 입력해주세요(페이지 맨 아래).";
     return;
   }
   if (!confirm(`"${name}" 카드를 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
-  toggle.open = true;
+  document.querySelector("details.add-toggle").open = true; // 진행 상태(addStatus)가 그 안에 있어서 펼쳐줌
   statusEl.className = "add-status";
   statusEl.textContent = `"${name}" 삭제하는 중...`;
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
@@ -1634,16 +1636,15 @@ async function saveOrderToGithub(newNames) {
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
   const statusEl = document.getElementById("addStatus");
-  const toggle = document.querySelector("details.add-toggle");
   if (!owner || !repo || !token) {
-    toggle.open = true;
+    openGithubSettings();
     statusEl.className = "add-status err";
-    statusEl.textContent = "순서를 바꾸려면 아래 GitHub 연결 설정을 먼저 입력해주세요.";
+    statusEl.textContent = "순서를 바꾸려면 GitHub 연결 설정을 먼저 입력해주세요(페이지 맨 아래).";
     renderTable();
     return;
   }
   reorderBusy = true;
-  toggle.open = true;
+  document.querySelector("details.add-toggle").open = true; // 진행 상태(addStatus)가 그 안에 있어서 펼쳐줌
   statusEl.className = "add-status";
   statusEl.textContent = "순서를 저장하는 중...";
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
@@ -1716,9 +1717,9 @@ refreshBtn.addEventListener("click", async () => {
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
   if (!owner || !repo || !token) {
-    document.querySelector("details.add-toggle").open = true;
+    openGithubSettings();
     refreshStatus.className = "refresh-status err";
-    refreshStatus.textContent = "먼저 아래 GitHub 연결 설정을 입력해주세요.";
+    refreshStatus.textContent = "먼저 GitHub 연결 설정을 입력해주세요(페이지 맨 아래).";
     return;
   }
   const headers = {
@@ -1832,6 +1833,17 @@ async function init() {
 }
 init();
 </script>
+<details class="gh-settings gh-settings-standalone">
+  <summary>⚙️ GitHub 연결 설정 (카드 추가·삭제·순서변경·업데이트에 공통으로 쓰여요 · 최초 1회만 입력하면 저장됩니다)</summary>
+  <div class="gh-settings-grid">
+    <input type="text" id="ghOwner" placeholder="저장소 소유자 (예: myj8755-ops)">
+    <input type="text" id="ghRepo" placeholder="저장소 이름 (예: MYTCG)">
+    <input type="password" id="ghToken" placeholder="Personal Access Token">
+  </div>
+  <div class="grade-tag" style="margin-top:6px">
+    토큰은 이 브라우저에만 저장되고 서버로 전송되지 않습니다(GitHub API에만 직접 사용). GitHub → 우측 상단 프로필 → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 이 저장소만 선택하고 Contents 권한과 Actions 권한을 모두 Read and write로 발급하세요.
+  </div>
+</details>
 <footer>
   <b>데이터 출처</b>: SNKRDUNK(스니커덩크) 각 카드 상세 페이지의 매매이력(売買履歴), PSA10·1장 거래만 집계.<br>
   <b>환산 방식</b>: 엔화 거래가 × 환율(자동 조회) × 1.10(관부가세) = 한국에서 실제 구매 시 드는 비용 기준.<br>
