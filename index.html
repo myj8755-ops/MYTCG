@@ -523,10 +523,10 @@
     text-align: right;
     font-size: 11px;
     color: var(--gray);
-    margin-top: 2px;
-    max-width: 220px;
+    margin-top: 4px;
+    max-width: 280px;
     margin-left: auto;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 </style>
 </head>
@@ -879,8 +879,7 @@ function buildPortfolioHistory() {
   });
   return { totalBuy, points };
 }
-// 두 시점(perCard 스냅샷)을 비교해서 "어떤 카드가 얼마나 움직였는지"를 짧은 코멘트로 만든다.
-// 예: "블래키 ex SAR ▲+15,000원, 마리오 하프일러 ▼-3,000원"
+// 두 시점(perCard 스냅샷)을 비교해서 "어떤 카드가 얼마나 움직였는지"를 카드 한 줄씩 나열한다.
 function buildIssueComment(perCard, olderPerCard) {
   const diffs = Object.keys(perCard)
     .map(name => ({ name, diff: perCard[name] - (olderPerCard[name] ?? perCard[name]) }))
@@ -888,9 +887,9 @@ function buildIssueComment(perCard, olderPerCard) {
     .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
   if (!diffs.length) return "";
   const maxShow = 4;
-  const shown = diffs.slice(0, maxShow).map(d => `${d.name} ${d.diff > 0 ? "▲" : "▼"}${signedWon(d.diff)}`);
+  const shown = diffs.slice(0, maxShow).map(d => `<div>${d.name} ${d.diff > 0 ? "▲" : "▼"}${signedWon(d.diff)}</div>`);
   const rest = diffs.length - maxShow;
-  return shown.join(", ") + (rest > 0 ? ` 외 ${rest}건` : "");
+  return shown.join("") + (rest > 0 ? `<div>외 ${rest}건</div>` : "");
 }
 // 포트폴리오 전체 평가금액이 시각별로 어떻게 바뀌었는지(변동액/변동률/그 시점 수익률)와,
 // 그 변동을 만든 카드가 무엇인지 짧은 코멘트로 함께 보여준다.
