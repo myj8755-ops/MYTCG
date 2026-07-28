@@ -850,8 +850,11 @@ function formatDateTimeKST(iso) {
   return `${kst.getUTCFullYear()}-${pad(kst.getUTCMonth()+1)}-${pad(kst.getUTCDate())} ${pad(kst.getUTCHours())}:${pad(kst.getUTCMinutes())}`;
 }
 let portfolioHistoryOpen = false;
+const PORTFOLIO_HISTORY_PAGE_SIZE = 20;
+let portfolioHistoryShownCount = PORTFOLIO_HISTORY_PAGE_SIZE;
 function openPortfolioHistoryModal() {
   portfolioHistoryOpen = true;
+  portfolioHistoryShownCount = PORTFOLIO_HISTORY_PAGE_SIZE; // 열 때마다 최근 20개부터 다시 시작
   renderPortfolioHistoryModal();
 }
 function closePortfolioHistoryModal() {
@@ -929,8 +932,9 @@ function renderPortfolioHistoryModal() {
       return { ts: point.ts, totalCur: point.totalCur, rate, issueHtml, hasChange: true };
     })
     .filter(row => row.hasChange);
-  const rowsHtml = changedRows.length
-    ? changedRows.map(row => `
+  const visibleRows = changedRows.slice(0, portfolioHistoryShownCount);
+  const rowsHtml = visibleRows.length
+    ? visibleRows.map(row => `
         <tr>
           <td>${formatDateTimeKST(row.ts)}</td>
           <td>${won(row.totalCur)}</td>
@@ -939,6 +943,12 @@ function renderPortfolioHistoryModal() {
         </tr>
       `).join("")
     : `<tr><td colspan="4" style="text-align:center; color:var(--gray)">아직 기록된 히스토리가 없어요. 다음 자동 갱신부터 시각별로 쌓여요.</td></tr>`;
+  const hasMore = changedRows.length > visibleRows.length;
+  const loadMoreHtml = hasMore
+    ? `<div style="text-align:center; margin-top:12px;">
+         <button class="btn secondary" id="historyLoadMoreBtn" style="padding:6px 14px; font-size:12.5px;">더보기 (총 ${changedRows.length}개 중 ${visibleRows.length}개 표시)</button>
+       </div>`
+    : "";
   root.innerHTML = `
     <div class="modal-backdrop" id="historyModalBackdrop">
       <div class="modal-panel">
@@ -953,6 +963,7 @@ function renderPortfolioHistoryModal() {
           </thead>
           <tbody>${rowsHtml}</tbody>
         </table>
+        ${loadMoreHtml}
       </div>
     </div>
   `;
@@ -960,6 +971,13 @@ function renderPortfolioHistoryModal() {
   document.getElementById("historyModalBackdrop").addEventListener("click", (e) => {
     if (e.target.id === "historyModalBackdrop") closePortfolioHistoryModal();
   });
+  const loadMoreBtn = document.getElementById("historyLoadMoreBtn");
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener("click", () => {
+      portfolioHistoryShownCount += PORTFOLIO_HISTORY_PAGE_SIZE;
+      renderPortfolioHistoryModal();
+    });
+  }
 }
 function renderTable() {
   const tbody = document.querySelector("#cardTable tbody");
