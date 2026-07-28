@@ -721,6 +721,17 @@
   <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
   <div class="grade-tag" style="margin-top:8px">점선은 구매가입니다. 표시 구간은 SNKRDUNK에 남아있는 최근 거래 내역 범위로, 카드마다 거래량에 따라 기간이 다릅니다(거래가 활발한 카드는 최근 1~2일치만 조회됨).</div>
 </div>
+<details class="gh-settings gh-settings-standalone">
+  <summary>⚙️ GitHub 연결 설정 (카드 추가·삭제·순서변경·업데이트에 공통으로 쓰여요 · 최초 1회만 입력하면 저장됩니다)</summary>
+  <div class="gh-settings-grid">
+    <input type="text" id="ghOwner" placeholder="저장소 소유자 (예: myj8755-ops)">
+    <input type="text" id="ghRepo" placeholder="저장소 이름 (예: MYTCG)">
+    <input type="password" id="ghToken" placeholder="Personal Access Token">
+  </div>
+  <div class="grade-tag" style="margin-top:6px">
+    토큰은 이 브라우저에만 저장되고 서버로 전송되지 않습니다(GitHub API에만 직접 사용). GitHub → 우측 상단 프로필 → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 이 저장소만 선택하고 Contents 권한과 Actions 권한을 모두 Read and write로 발급하세요.
+  </div>
+</details>
 <script>
 let data = {};
 function cardNames(d) {
@@ -1833,17 +1844,6 @@ async function init() {
 }
 init();
 </script>
-<details class="gh-settings gh-settings-standalone">
-  <summary>⚙️ GitHub 연결 설정 (카드 추가·삭제·순서변경·업데이트에 공통으로 쓰여요 · 최초 1회만 입력하면 저장됩니다)</summary>
-  <div class="gh-settings-grid">
-    <input type="text" id="ghOwner" placeholder="저장소 소유자 (예: myj8755-ops)">
-    <input type="text" id="ghRepo" placeholder="저장소 이름 (예: MYTCG)">
-    <input type="password" id="ghToken" placeholder="Personal Access Token">
-  </div>
-  <div class="grade-tag" style="margin-top:6px">
-    토큰은 이 브라우저에만 저장되고 서버로 전송되지 않습니다(GitHub API에만 직접 사용). GitHub → 우측 상단 프로필 → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 이 저장소만 선택하고 Contents 권한과 Actions 권한을 모두 Read and write로 발급하세요.
-  </div>
-</details>
 <footer>
   <b>데이터 출처</b>: SNKRDUNK(스니커덩크) 각 카드 상세 페이지의 매매이력(売買履歴), PSA10·1장 거래만 집계.<br>
   <b>환산 방식</b>: 엔화 거래가 × 환율(자동 조회) × 1.10(관부가세) = 한국에서 실제 구매 시 드는 비용 기준.<br>
