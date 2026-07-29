@@ -12,11 +12,13 @@ const DATA_PATH = new URL("./data.json", import.meta.url);
 const TAX_RATE = 1.10; // 관부가세 10%
 const FALLBACK_JPY_KRW = 9.05;
 const HISTORY_RETENTION_DAYS = 30; // 시각별(보통 1시간 간격) 기록은 최근 30일치만 보관, 그 이전은 자동 삭제
-// 실행마다(시각+가격) 기록을 card.history에 추가하고 30일이 지난 기록은 정리한다.
-// 사이트의 "가격 변동 히스토리" 레이어에서 시각별 변동을 보여주는 데 쓰인다.
-function appendHistory(card, now, krw) {
+// 실행마다(시각+원화가+엔화원가) 기록을 card.history에 추가하고 30일이 지난 기록은 정리한다.
+// 엔화 원가(jpy)를 같이 남겨두는 이유: 프론트엔드의 "포트폴리오 히스토리"가 환율 변동만으로
+// 생기는 노이즈(엔화 시세는 그대로인데 원화 환산값만 바뀌는 것)를 걸러내고, 실제 엔화 시세가
+// 움직였을 때만 변동으로 표시할 수 있게 하기 위함.
+function appendHistory(card, now, krw, jpy) {
   if (!Array.isArray(card.history)) card.history = [];
-  card.history.push([now.toISOString(), krw]);
+  card.history.push([now.toISOString(), krw, jpy]);
   const cutoff = now.getTime() - HISTORY_RETENTION_DAYS * 24 * 60 * 60 * 1000;
   card.history = card.history.filter(([ts]) => new Date(ts).getTime() >= cutoff);
 }
@@ -114,7 +116,7 @@ async function main() {
       } else {
         series.push([today, krw]);
       }
-      appendHistory(card, now, krw);
+      appendHistory(card, now, krw, jpy);
       const lastTradeDate = parseTradeDateText(dateText, now);
       if (lastTradeDate) {
         card.lastTradeDate = lastTradeDate;
@@ -152,7 +154,7 @@ async function main() {
       } else {
         series.push([today, krw]);
       }
-      appendHistory(card, now, krw);
+      appendHistory(card, now, krw, jpy);
       const lastTradeDate = parseTradeDateText(dateText, now);
       if (lastTradeDate) {
         card.lastTradeDate = lastTradeDate;
@@ -165,7 +167,7 @@ async function main() {
     }
   }
   await browser.close();
-  data._meta = { updatedAt: new Date().toISOString() };
+  data._meta = { updatedAt: new Date().toISOString(), rate };
   await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 1), "utf-8");
   console.log("data.json 갱신 완료:", today, "(환율:", rate, ")");
 }

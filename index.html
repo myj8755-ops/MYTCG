@@ -864,26 +864,40 @@ function closePortfolioHistoryModal() {
 // 카드마다 매 실행(보통 1시간 간격)마다 (시각, 가격) 기록이 쌓이는데, 한 번의 스크립트 실행에서는
 // 모든 카드가 같은 시각(now)을 공유하므로, 그 시각들을 모아서 "그 시점의 포트폴리오 총 평가금액"을
 // 계산한다. 특정 카드가 그 회차에 스크래핑 실패했으면 그 카드는 마지막으로 알려진 가격을 그대로 이어쓴다.
+const HISTORY_TAX_RATE = 1.10; // scrape.mjs와 동일한 관부가세율 (엔화 원가를 최신 환율로 재계산할 때 사용)
 function buildPortfolioHistory() {
   const names = cardNames(data);
   const totalBuy = names.reduce((s, n) => s + data[n].buy, 0);
+  // 매 실행마다 그 시점 환율로 원화 환산해서 저장하다 보니, 엔화 시세는 그대로여도
+  // 환율만 움직이면 값이 바뀐 것처럼 보였다. 이를 없애기 위해, 엔화 원가(jpy)가 기록된
+  // 시점부터는 "현재(가장 최근) 환율" 하나로 전체 히스토리를 일괄 재계산한다.
+  // 그러면 남는 변동은 오직 엔화 시세 자체의 변동뿐이다. (jpy가 없는 옛 기록은 그때 저장된
+  // 원화값을 그대로 사용 — 이 업데이트 이전 데이터라 재계산할 엔화 원가가 없음)
+  const fxRate = data._meta && typeof data._meta.rate === "number" ? data._meta.rate : null;
   const historyMaps = {};
   const tsSet = new Set();
   names.forEach(n => {
     const h = Array.isArray(data[n].history) ? data[n].history : [];
-    historyMaps[n] = new Map(h.map(([ts, price]) => [ts, price]));
+    historyMaps[n] = new Map(h.map(([ts, krw, jpy]) => [ts, { krw, jpy }]));
     h.forEach(([ts]) => tsSet.add(ts));
   });
   const timestamps = Array.from(tsSet).sort((a, b) => new Date(a) - new Date(b));
   const lastKnown = {};
-  names.forEach(n => { lastKnown[n] = data[n].buy; }); // 첫 기록 이전엔 구매가로 대체
+  names.forEach(n => { lastKnown[n] = { krw: data[n].buy, jpy: null }; }); // 첫 기록 이전엔 구매가로 대체
   const points = timestamps.map(ts => {
     names.forEach(n => {
-      const price = historyMaps[n].get(ts);
-      if (price !== undefined) lastKnown[n] = price;
+      const rec = historyMaps[n].get(ts);
+      if (rec !== undefined) lastKnown[n] = rec;
     });
-    const totalCur = names.reduce((s, n) => s + lastKnown[n], 0);
-    return { ts, totalCur, perCard: { ...lastKnown } }; // perCard: 그 시점 기준 카드별 평가금액 스냅샷
+    const perCard = {};
+    names.forEach(n => {
+      const rec = lastKnown[n];
+      perCard[n] = (rec.jpy != null && fxRate)
+        ? Math.round(rec.jpy * fxRate * HISTORY_TAX_RATE)
+        : rec.krw;
+    });
+    const totalCur = names.reduce((s, n) => s + perCard[n], 0);
+    return { ts, totalCur, perCard }; // perCard: 그 시점 기준 카드별 평가금액 스냅샷(환율 고정 재계산)
   });
   return { totalBuy, points };
 }
