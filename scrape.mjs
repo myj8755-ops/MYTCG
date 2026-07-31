@@ -167,8 +167,16 @@ async function main() {
     }
   }
   await browser.close();
-  data._meta = { updatedAt: new Date().toISOString(), rate };
+  // historyFxRate: 포트폴리오 히스토리 재계산 전용 "고정 환율".
+  // data._meta.rate(아래)는 매 실행마다 최신값으로 갱신되어 "현재 시세" 표시용으로 쓰이지만,
+  // historyFxRate는 최초 1회 저장된 값을 이후로는 절대 덮어쓰지 않는다.
+  // 이렇게 해야 과거에 기록된 히스토리 시점들이 나중에 환율이 움직여도 다시 계산되면서
+  // 통째로 바뀌는 문제(엔화 시세는 그대로인데 원화 환산값 전체가 흔들리는 문제)가 생기지 않는다.
+  const historyFxRate = (data._meta && typeof data._meta.historyFxRate === "number")
+    ? data._meta.historyFxRate
+    : rate;
+  data._meta = { updatedAt: new Date().toISOString(), rate, historyFxRate };
   await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 1), "utf-8");
-  console.log("data.json 갱신 완료:", today, "(환율:", rate, ")");
+  console.log("data.json 갱신 완료:", today, "(환율:", rate, "/ 히스토리 고정환율:", historyFxRate, ")");
 }
 main();

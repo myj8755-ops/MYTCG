@@ -870,10 +870,14 @@ function buildPortfolioHistory() {
   const totalBuy = names.reduce((s, n) => s + data[n].buy, 0);
   // 매 실행마다 그 시점 환율로 원화 환산해서 저장하다 보니, 엔화 시세는 그대로여도
   // 환율만 움직이면 값이 바뀐 것처럼 보였다. 이를 없애기 위해, 엔화 원가(jpy)가 기록된
-  // 시점부터는 "현재(가장 최근) 환율" 하나로 전체 히스토리를 일괄 재계산한다.
-  // 그러면 남는 변동은 오직 엔화 시세 자체의 변동뿐이다. (jpy가 없는 옛 기록은 그때 저장된
+  // 시점부터는 "고정 환율(historyFxRate)" 하나로 전체 히스토리를 일괄 재계산한다.
+  // 주의: data._meta.rate는 스크래핑할 때마다 계속 갱신되는 "현재 환율"이라 이걸 쓰면
+  // 새로고침할 때마다 과거 기록까지 통째로 달라져 버린다(실제로 겪었던 문제).
+  // 반드시 최초 1회만 저장되고 이후로는 절대 바뀌지 않는 historyFxRate를 써야, 한 번
+  // 기록된 과거 시점은 이후 몇 번을 새로고침해도 값이 그대로 고정된다.
+  // 남는 변동은 오직 엔화 시세 자체의 변동뿐이다. (jpy가 없는 옛 기록은 그때 저장된
   // 원화값을 그대로 사용 — 이 업데이트 이전 데이터라 재계산할 엔화 원가가 없음)
-  const fxRate = data._meta && typeof data._meta.rate === "number" ? data._meta.rate : null;
+  const fxRate = data._meta && typeof data._meta.historyFxRate === "number" ? data._meta.historyFxRate : null;
   const historyMaps = {};
   const tsSet = new Set();
   names.forEach(n => {
