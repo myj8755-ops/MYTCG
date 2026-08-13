@@ -3376,5 +3376,16 @@
    ],
    "lastTradeDate": "2026-08-05"
   }
+ },
+ "도쿄 벚꽃 아프로2": {
+  "buy": 3090000,
+  "grade": "SM-P 211 · PSA10",
+  "url": "https://snkrdunk.com/apparels/91251",
+  "series": [
+   [
+    "2026-08-13",
+    3290000
+   ]
+  ]
  }
 }
