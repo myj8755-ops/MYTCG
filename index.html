@@ -133,6 +133,7 @@
   .stack-bottom.pos { color: var(--green); }
   .stack-bottom.neg { color: var(--red); }
   .stack-sub { font-size: 11.5px; font-weight: 600; margin-left: 4px; }
+  .stack-yen { font-size: 11px; color: var(--gray); margin-top: 1px; }
   .last-trade-cell { font-size: 12.5px; color: var(--gray); }
   .last-trade-cell.stale { color: #b45309; }
   .dt-value.editable-wrap textarea {
@@ -762,6 +763,18 @@ function pct(n) {
   const s = n >= 0 ? "+" : "";
   return s + n.toFixed(1) + "%";
 }
+function yen(n) {
+  if (n === null || n === undefined) return "-";
+  return "¥" + Math.round(n).toLocaleString("ja-JP");
+}
+// card.history의 각 항목은 [시각, 원화가, 엔화원가] 형태. 가장 최근 기록의 엔화원가를 꺼내온다.
+// (구 데이터라 history가 없거나 엔화값이 없는 카드는 null을 반환)
+function latestJpy(d) {
+  const h = Array.isArray(d.history) ? d.history : [];
+  if (!h.length) return null;
+  const last = h[h.length - 1];
+  return typeof last[2] === "number" ? last[2] : null;
+}
 // value가 전체 ISO datetime("...T...")이면 시/분 단위까지, 날짜만("YYYY-MM-DD")이면
 // 일 단위까지 상대 시간을 계산해서 { label, days } 형태로 반환.
 function timeAgoLabel(value) {
@@ -804,7 +817,8 @@ function buildRows() {
     const rate = diff / d.buy * 100;
     const pop = typeof d.psa10Pop === "number" ? d.psa10Pop : null;
     const lastTrade = typeof d.lastTradeDate === "string" ? d.lastTradeDate : "";
-    return { name, grade: d.grade, buy: d.buy, cur, diff, rate, pop, lastTrade };
+    const jpy = latestJpy(d);
+    return { name, grade: d.grade, buy: d.buy, cur, diff, rate, pop, lastTrade, jpy };
   });
 }
 let sortKey = null, sortAsc = true;
@@ -815,8 +829,10 @@ function detailRowHtml(name) {
   if (!d) return "";
   const info = d.info || {};
   const pop = typeof d.psa10Pop === "number" ? d.psa10Pop.toLocaleString("ko-KR") + "장" : "정보 없음";
+  const jpy = latestJpy(d);
   const items = [
     ["PSA10 POP", pop],
+    ["최근 엔화 거래가", jpy !== null ? yen(jpy) : "정보 없음"],
     ["획득 경로", info.acquired || "정보 없음"],
     ["카드 특징", info.features || "정보 없음"],
     ["카드 평가", info.comment || "정보 없음"],
@@ -1078,6 +1094,7 @@ function renderTable() {
         <div class="stack-cell">
           <span class="stack-top">${won(r.buy)}</span>
           <span class="stack-bottom">→ ${won(r.cur)}</span>
+          ${r.jpy !== null ? `<span class="stack-yen">${yen(r.jpy)}</span>` : ""}
         </div>
       </td>
       <td>
@@ -1192,8 +1209,10 @@ function renderChart(name) {
   const diff = cur - d.buy;
   const rate = diff / d.buy * 100;
   const popText = typeof d.psa10Pop === "number" ? ` · PSA10 Pop ${d.psa10Pop.toLocaleString("ko-KR")}장` : "";
+  const jpy = latestJpy(d);
+  const jpyText = jpy !== null ? ` · 엔화 ${yen(jpy)}` : "";
   document.getElementById("chartStats").innerHTML =
-    `구매가 ${won(d.buy)} → 현재가 ${won(cur)} · <span class="${diff>=0?'pos':'neg'}">${signedWon(diff)} (${pct(rate)})</span>${popText}`;
+    `구매가 ${won(d.buy)} → 현재가 ${won(cur)} · <span class="${diff>=0?'pos':'neg'}">${signedWon(diff)} (${pct(rate)})</span>${popText}${jpyText}`;
   document.getElementById("chartLink").href = data[name].url;
   const ctx = document.getElementById("trendChart").getContext("2d");
   if (chart) chart.destroy();
@@ -1294,6 +1313,7 @@ function watchlistRows() {
       pop: typeof d.psa10Pop === "number" ? d.psa10Pop : null,
       memo: d.memo || "",
       cur,
+      jpy: latestJpy(d),
       lastTrade: d.lastTradeDate || "",
       evaluation: d.evaluation || "",
     };
@@ -1365,7 +1385,11 @@ function renderWatchlist() {
         <b>${r.name}</b><span class="grade-tag">${r.grade}</span>
         ${r.memo ? `<span class="memo-tag">${r.memo}</span>` : ""}
       </td>
-      <td>${r.cur !== null ? won(r.cur) : "아직 시세 없음"}</td>
+      <td>
+        ${r.cur !== null
+          ? `<div class="stack-cell"><span class="stack-bottom">${won(r.cur)}</span>${r.jpy !== null ? `<span class="stack-yen">${yen(r.jpy)}</span>` : ""}</div>`
+          : "아직 시세 없음"}
+      </td>
       <td>${r.target ? won(r.target) : "-"}</td>
       <td>${gapHtml}</td>
       <td>${r.pop !== null ? r.pop.toLocaleString("ko-KR") + "장" : "-"}</td>
