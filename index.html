@@ -741,6 +741,29 @@ function cardNames(d) {
 function watchlistNames(d) {
   return Object.keys(d._watchlist || {});
 }
+// 카드 하나의 "현재 시점 최신 평가금액"을 하나로 통일해서 계산한다.
+// series(일 단위)와 history(시각 단위)가 서로 다른 스크립트 실행에서 따로 기록되다 보니
+// 같은 날짜라도 값이 어긋나는 경우가 있었다(상단 요약 vs 히스토리 모달 수익률 불일치의 원인).
+// 그래서 실제로 더 최근 타임스탬프를 가진 쪽 값을 우선 사용하고, 둘 다 없으면 구매가로 대체한다.
+function latestCardValue(name) {
+  const d = data[name];
+  if (!d) return 0;
+  const h = Array.isArray(d.history) ? d.history : [];
+  let latestHistory = null;
+  h.forEach(rec => {
+    if (!latestHistory || new Date(rec[0]) > new Date(latestHistory[0])) latestHistory = rec;
+  });
+  const s = Array.isArray(d.series) ? d.series : [];
+  const latestSeries = s.length ? s[s.length - 1] : null; // series는 날짜순 정렬돼 저장된다고 가정
+  if (latestHistory && latestSeries) {
+    // series는 날짜만 있으므로 그 날짜의 자정(KST)~다음날 자정 사이로 보고 비교
+    const seriesTs = new Date(latestSeries[0] + "T23:59:59+09:00");
+    return new Date(latestHistory[0]) >= seriesTs ? latestHistory[1] : latestSeries[1];
+  }
+  if (latestHistory) return latestHistory[1];
+  if (latestSeries) return latestSeries[1];
+  return d.buy;
+}
 function formatUpdatedAt(iso) {
   if (!iso) return "-";
   const d = new Date(iso);
@@ -812,7 +835,7 @@ let rows = [];
 function buildRows() {
   rows = cardNames(data).map(name => {
     const d = data[name];
-    const cur = d.series[d.series.length-1][1];
+    const cur = latestCardValue(name);
     const diff = cur - d.buy;
     const rate = diff / d.buy * 100;
     const pop = typeof d.psa10Pop === "number" ? d.psa10Pop : null;
@@ -909,6 +932,16 @@ function buildPortfolioHistory() {
     const totalCur = names.reduce((s, n) => s + perCard[n], 0);
     return { ts, totalCur, perCard }; // perCard: 그 시점 기준 카드별 평가금액 스냅샷(저장된 실값 그대로)
   });
+  // 상단 요약(sumCur)과 항상 정확히 일치시키기 위해, "지금" 시점 스냅샷을 마지막 point로 덧붙인다.
+  // series가 history보다 더 최근에 갱신된 카드가 있으면 마지막 history-only point와 값이 달라질 수 있는데,
+  // 이 synthetic point가 그 차이를 흡수해서 모달 맨 위 행 = 헤더 총 평가금액이 되도록 맞춰준다.
+  const nowPerCard = {};
+  names.forEach(n => { nowPerCard[n] = latestCardValue(n); });
+  const nowTotal = names.reduce((s, n) => s + nowPerCard[n], 0);
+  const lastPoint = points[points.length - 1];
+  if (!lastPoint || nowTotal !== lastPoint.totalCur) {
+    points.push({ ts: new Date().toISOString(), totalCur: nowTotal, perCard: nowPerCard });
+  }
   return { totalBuy, points };
 }
 // 두 시점(perCard 스냅샷)을 비교해서 "어떤 카드가 얼마나 움직였는지"를 카드 한 줄씩 나열한다.
@@ -1256,7 +1289,7 @@ select.addEventListener("change", () => renderChart(select.value));
 function renderSummary() {
   const names = cardNames(data);
   let buy = 0, cur = 0;
-  names.forEach(n => { buy += data[n].buy; cur += data[n].series[data[n].series.length-1][1]; });
+  names.forEach(n => { buy += data[n].buy; cur += latestCardValue(n); });
   const diff = cur - buy;
   const rate = diff / buy * 100;
   document.getElementById("sumBuy").textContent = won(buy);
