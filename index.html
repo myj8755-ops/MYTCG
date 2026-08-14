@@ -753,15 +753,13 @@ function latestCardValue(name) {
   h.forEach(rec => {
     if (!latestHistory || new Date(rec[0]) > new Date(latestHistory[0])) latestHistory = rec;
   });
-  const s = Array.isArray(d.series) ? d.series : [];
-  const latestSeries = s.length ? s[s.length - 1] : null; // series는 날짜순 정렬돼 저장된다고 가정
-  if (latestHistory && latestSeries) {
-    // series는 날짜만 있으므로 그 날짜의 자정(KST)~다음날 자정 사이로 보고 비교
-    const seriesTs = new Date(latestSeries[0] + "T23:59:59+09:00");
-    return new Date(latestHistory[0]) >= seriesTs ? latestHistory[1] : latestSeries[1];
-  }
+  // history가 있으면 무조건 그 값을 쓴다. history는 엔화 원가(jpy)가 실제로 바뀔 때만
+  // 새로 기록되므로(scrape.mjs), 환율만 움직이고 엔화 시세는 그대로인 순간에도 값이
+  // 흔들리지 않는다. series는 매 실행마다 그날 값을 그 시점 환율로 덮어쓰기 때문에
+  // history가 있는 카드에는 아예 쓰지 않는다 — 그러면 환율 노이즈가 새어들어올 길이 없다.
   if (latestHistory) return latestHistory[1];
-  if (latestSeries) return latestSeries[1];
+  const s = Array.isArray(d.series) ? d.series : [];
+  if (s.length) return s[s.length - 1][1];
   return d.buy;
 }
 function formatUpdatedAt(iso) {
