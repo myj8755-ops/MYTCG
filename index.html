@@ -1828,7 +1828,8 @@ async function saveOrderToGithub(newNames) {
     known.forEach(n => { if (!finalOrder.includes(n)) finalOrder.push(n); });
     const reordered = {};
     finalOrder.forEach(n => { reordered[n] = currentData[n]; });
-    reordered._meta = { updatedAt: new Date().toISOString() };
+    reordered._meta = { updatedAt: new Date().toISOString(), rate: currentData._meta?.rate };
+    reordered._watchlist = currentData._watchlist || {}; // 순서 편집은 보유 카드 순서만 바꾸는 기능이므로 관심후보카드는 그대로 보존
     const putRes = await fetch(apiUrl, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
