@@ -53,7 +53,7 @@ async function getExchangeRate() {
 function extractLatestPsa10(pageText) {
   const lines = pageText.split("\n");
   for (const line of lines) {
-    const m = line.match(/^(.*?)\s*PSA10\s+1(?:枚|장)\s+¥([\d,]+)/);
+    const m = line.match(/^(.*?)\s*PSA10\s+1(?:枚|장)\s+¥\s*([\d,]+)/);
     if (m) {
       const dateText = m[1].trim();
       const jpy = parseInt(m[2].replace(/,/g, ""), 10);
