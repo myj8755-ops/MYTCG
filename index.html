@@ -168,6 +168,31 @@
   .dt-edit-save:hover { background: #1d4ed8; }
   .dt-edit-cancel { background: #fff; color: #374151; border: 1px solid var(--border); }
   .dt-edit-cancel:hover { background: var(--bg-soft); }
+  .detail-edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .detail-edit-grid label {
+    display: block;
+    font-size: 12px;
+    color: var(--gray);
+    margin-bottom: 4px;
+  }
+  .detail-edit-grid input, .detail-edit-grid textarea {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    box-sizing: border-box;
+    resize: vertical;
+  }
+  @media (max-width: 640px) {
+    .detail-edit-grid { grid-template-columns: 1fr !important; }
+  }
   .watchlist-section {
     margin-top: 32px;
     border: 1px solid var(--border);
@@ -627,9 +652,29 @@
       <label>현재가(원, 최초값)</label>
       <input type="number" id="addCur" placeholder="예: 1582840">
     </div>
+    <div>
+      <label>PSA10 Pop(선택)</label>
+      <input type="number" id="addPop" placeholder="예: 1894">
+    </div>
     <div style="grid-column: 1 / -1;">
       <label>SNKRDUNK 링크</label>
       <input type="text" id="addUrl" placeholder="https://snkrdunk.com/apparels/...">
+    </div>
+    <div style="grid-column: 1 / -1;">
+      <label>획득 경로(선택)</label>
+      <textarea id="addAcquired" rows="2" placeholder="예: 2016년 마리오 피카츄 스페셜 박스에 동봉된 프로모 카드예요."></textarea>
+    </div>
+    <div style="grid-column: 1 / -1;">
+      <label>카드 특징(선택)</label>
+      <textarea id="addFeatures" rows="2" placeholder="예: 피카츄가 슈퍼마리오 복장을 한 홀로 일러스트 카드예요."></textarea>
+    </div>
+    <div style="grid-column: 1 / -1;">
+      <label>카드 평가(선택)</label>
+      <textarea id="addComment" rows="3" placeholder="예: Pop 대비 시세가 이미 고평가된 상태로 보여요."></textarea>
+    </div>
+    <div style="grid-column: 1 / -1;">
+      <label>5년 후 가치 예상(선택)</label>
+      <textarea id="addForecast" rows="2" placeholder="예: 재발매 가능성이 낮아 완만한 우상향이 예상돼요. (개인적인 추정이며 투자 조언이 아니에요)"></textarea>
     </div>
   </div>
   <div class="add-actions">
@@ -845,9 +890,68 @@ function buildRows() {
 let sortKey = null, sortAsc = true;
 let reorderMode = false;
 let expandedName = null;
+let cardEditing = false;
+function detailEditFormHtml(name) {
+  const d = data[name];
+  const info = d.info || {};
+  return `
+    <div class="detail-edit-grid">
+      <div>
+        <label>세트/카드번호</label>
+        <input type="text" id="editGrade" value="${(d.grade || "").replace(/"/g, "&quot;")}">
+      </div>
+      <div>
+        <label>구매가(원)</label>
+        <input type="number" id="editBuy" value="${d.buy}">
+      </div>
+      <div>
+        <label>PSA10 Pop</label>
+        <input type="number" id="editPop" value="${typeof d.psa10Pop === "number" ? d.psa10Pop : ""}">
+      </div>
+      <div>
+        <label>SNKRDUNK 링크</label>
+        <input type="text" id="editUrl" value="${(d.url || "").replace(/"/g, "&quot;")}">
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <label>획득 경로</label>
+        <textarea id="editAcquired" rows="2">${info.acquired || ""}</textarea>
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <label>카드 특징</label>
+        <textarea id="editFeatures" rows="2">${info.features || ""}</textarea>
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <label>카드 평가</label>
+        <textarea id="editComment" rows="3">${info.comment || ""}</textarea>
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <label>5년 후 가치 예상</label>
+        <textarea id="editForecast" rows="2">${info.forecast || ""}</textarea>
+      </div>
+    </div>
+    <div class="dt-edit-actions">
+      <button class="dt-edit-save" data-card-edit-save="${name}">저장</button>
+      <button class="dt-edit-cancel" data-card-edit-cancel>취소</button>
+    </div>
+  `;
+}
 function detailRowHtml(name) {
   const d = data[name];
   if (!d) return "";
+  if (cardEditing) {
+    return `
+      <tr class="detail-row" data-detail-for="${name}">
+        <td colspan="8">
+          <div class="detail-head">
+            <b>${name}</b>
+            <span class="grade-tag" style="margin-top:0">${d.grade}</span>
+            <button class="detail-close" data-close-detail aria-label="닫기">✕ 닫기</button>
+          </div>
+          ${detailEditFormHtml(name)}
+        </td>
+      </tr>
+    `;
+  }
   const info = d.info || {};
   const pop = typeof d.psa10Pop === "number" ? d.psa10Pop.toLocaleString("ko-KR") + "장" : "정보 없음";
   const jpy = latestJpy(d);
@@ -865,6 +969,7 @@ function detailRowHtml(name) {
         <div class="detail-head">
           <b>${name}</b>
           <span class="grade-tag" style="margin-top:0">${d.grade}</span>
+          <button class="dt-edit-link" data-card-edit-open="${name}">✎ 수정</button>
           <button class="detail-close" data-close-detail aria-label="닫기">✕ 닫기</button>
         </div>
         <div class="detail-grid">
@@ -1152,6 +1257,7 @@ function renderTable() {
       document.getElementById("cardSelect").value = name;
       renderChart(name);
       expandedName = expandedName === name ? null : name;
+      cardEditing = false;
       renderTable();
       if (expandedName) {
         const opened = document.querySelector(`tr.detail-row[data-detail-for="${CSS.escape(expandedName)}"]`);
@@ -1166,12 +1272,34 @@ function renderTable() {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       expandedName = null;
+      cardEditing = false;
       renderTable();
+    });
+  });
+  tbody.querySelectorAll("[data-card-edit-open]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      cardEditing = true;
+      renderTable();
+    });
+  });
+  tbody.querySelectorAll("[data-card-edit-cancel]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      cardEditing = false;
+      renderTable();
+    });
+  });
+  tbody.querySelectorAll("[data-card-edit-save]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      saveCardEditToGithub(btn.dataset.cardEditSave);
     });
   });
   // 재정렬/추가/삭제 등으로 카드가 사라졌다면 펼침 상태 해제
   if (expandedName && !list.some(r => r.name === expandedName)) {
     expandedName = null;
+    cardEditing = false;
   }
 }
 let sortableInstance = null;
@@ -1664,6 +1792,81 @@ async function saveEvaluationToGithub(name, newText) {
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "저장"; }
   }
 }
+async function saveCardEditToGithub(name) {
+  const statusEl = document.getElementById("addStatus");
+  const grade = document.getElementById("editGrade").value.trim();
+  const buy = parseInt(document.getElementById("editBuy").value, 10);
+  const popRaw = document.getElementById("editPop").value.trim();
+  const url = document.getElementById("editUrl").value.trim();
+  const acquired = document.getElementById("editAcquired").value.trim();
+  const features = document.getElementById("editFeatures").value.trim();
+  const comment = document.getElementById("editComment").value.trim();
+  const forecast = document.getElementById("editForecast").value.trim();
+  if (!grade || !url || isNaN(buy)) {
+    window.alert("세트/카드번호, 구매가, SNKRDUNK 링크는 비워둘 수 없어요.");
+    return;
+  }
+  const owner = ghOwnerEl.value.trim();
+  const repo = ghRepoEl.value.trim();
+  const token = ghTokenEl.value.trim();
+  if (!owner || !repo || !token) {
+    openGithubSettings();
+    return;
+  }
+  const saveBtn = document.querySelector(`[data-card-edit-save="${CSS.escape(name)}"]`);
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "저장 중..."; }
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/data.json`;
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+  };
+  try {
+    const getRes = await fetch(apiUrl, { headers });
+    if (!getRes.ok) throw new Error(`data.json을 불러오지 못했습니다 (${getRes.status}). 토큰/저장소 정보를 확인해주세요.`);
+    const getJson = await getRes.json();
+    const currentData = JSON.parse(b64ToUtf8(getJson.content));
+    if (!currentData[name]) {
+      throw new Error("이미 삭제되었거나 존재하지 않는 카드입니다.");
+    }
+    const card = currentData[name];
+    card.grade = grade;
+    card.buy = buy;
+    card.url = url;
+    if (popRaw) card.psa10Pop = parseInt(popRaw, 10);
+    else delete card.psa10Pop;
+    const info = {};
+    if (acquired) info.acquired = acquired;
+    if (features) info.features = features;
+    if (comment) info.comment = comment;
+    if (forecast) info.forecast = forecast;
+    if (Object.keys(info).length) card.info = info;
+    else delete card.info;
+    const putRes = await fetch(apiUrl, {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `chore: edit card ${name}`,
+        content: utf8ToB64(JSON.stringify(currentData, null, 1)),
+        sha: getJson.sha,
+      }),
+    });
+    if (!putRes.ok) {
+      const errJson = await putRes.json().catch(() => ({}));
+      throw new Error(`저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
+    }
+    data = currentData;
+    cardEditing = false;
+    renderSummary();
+    buildRows();
+    renderTable();
+    buildSelect();
+    statusEl.className = "add-status ok";
+    statusEl.textContent = `"${name}" 카드 정보가 수정됐습니다. 1~2분 뒤 사이트에도 반영됩니다.`;
+  } catch (e) {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "저장"; }
+    window.alert(e.message);
+  }
+}
 async function addCardToGithub() {
   const statusEl = document.getElementById("addStatus");
   statusEl.className = "add-status";
@@ -1675,6 +1878,11 @@ async function addCardToGithub() {
   const buy = parseInt(document.getElementById("addBuy").value, 10);
   const cur = parseInt(document.getElementById("addCur").value, 10);
   const url = document.getElementById("addUrl").value.trim();
+  const popRaw = document.getElementById("addPop").value.trim();
+  const acquired = document.getElementById("addAcquired").value.trim();
+  const features = document.getElementById("addFeatures").value.trim();
+  const comment = document.getElementById("addComment").value.trim();
+  const forecast = document.getElementById("addForecast").value.trim();
   const owner = ghOwnerEl.value.trim();
   const repo = ghRepoEl.value.trim();
   const token = ghTokenEl.value.trim();
@@ -1707,6 +1915,13 @@ async function addCardToGithub() {
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
     const today = new Date().toISOString().slice(0, 10);
     currentData[name] = { buy, grade, url, series: [[today, cur]] };
+    if (popRaw) currentData[name].psa10Pop = parseInt(popRaw, 10);
+    const info = {};
+    if (acquired) info.acquired = acquired;
+    if (features) info.features = features;
+    if (comment) info.comment = comment;
+    if (forecast) info.forecast = forecast;
+    if (Object.keys(info).length) currentData[name].info = info;
     const putRes = await fetch(apiUrl, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
@@ -1728,7 +1943,7 @@ async function addCardToGithub() {
     renderChart(name);
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 카드가 추가됐습니다. 1~2분 뒤 사이트에도 반영됩니다.`;
-    ["addName","addGrade","addBuy","addCur","addUrl"].forEach(id => document.getElementById(id).value = "");
+    ["addName","addGrade","addBuy","addCur","addUrl","addPop","addAcquired","addFeatures","addComment","addForecast"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("addGradeSelect").value = "PSA10";
   } catch (e) {
     statusEl.className = "add-status err";
