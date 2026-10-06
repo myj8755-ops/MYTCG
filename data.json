@@ -16072,5 +16072,17 @@
    ],
    "lastTradeDate": "2026-10-04"
   }
+ },
+ "비크티니 BWR": {
+  "buy": 1900000,
+  "grade": "288/SV-P · PSA10",
+  "url": "https://snkrdunk.com/apparels/585230",
+  "series": [
+   [
+    "2026-10-06",
+    111111
+   ]
+  ],
+  "psa10Pop": 3700
  }
 }
