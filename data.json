@@ -17022,5 +17022,20 @@
    ],
    "lastTradeDate": "2026-10-11"
   }
+ },
+ "레시라무 BWR": {
+  "buy": 925000,
+  "grade": "SV11W 174/086 · PSA10",
+  "url": "https://snkrdunk.com/apparels/585221",
+  "series": [
+   [
+    "2026-10-14",
+    1
+   ]
+  ],
+  "psa10Pop": 13962,
+  "info": {
+   "acquired": "네이버 카페"
+  }
  }
 }
