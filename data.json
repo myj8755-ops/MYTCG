@@ -1567,6 +1567,21 @@
    ]
   ]
  },
+ "리자몽 MUR": {
+  "buy": 2200000,
+  "grade": "M2 116/080 · PSA10",
+  "url": "https://snkrdunk.com/apparels/704407",
+  "series": [
+   [
+    "2026-10-14",
+    1
+   ]
+  ],
+  "psa10Pop": 4996,
+  "info": {
+   "acquired": "당근에서 구매"
+  }
+ },
  "삿포로의 피카츄": {
   "buy": 3000000,
   "grade": "SM-P 005 · PSA10",
@@ -5897,21 +5912,6 @@
     184800
    ]
   ]
- },
- "리자몽 MUR": {
-  "buy": 2200000,
-  "grade": "M2 116/080 · PSA10",
-  "url": "https://snkrdunk.com/apparels/704407",
-  "series": [
-   [
-    "2026-10-14",
-    1
-   ]
-  ],
-  "psa10Pop": 4996,
-  "info": {
-   "acquired": "당근에서 구매"
-  }
  },
  "블래키 ex SAR": {
   "buy": 870000,
@@ -15550,7 +15550,7 @@
   ]
  },
  "_meta": {
-  "updatedAt": "2026-10-14T09:57:45.904Z",
+  "updatedAt": "2026-10-14T09:57:50.238Z",
   "rate": 8.4835
  },
  "_watchlist": {
