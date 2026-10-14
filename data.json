@@ -5379,6 +5379,21 @@
    ]
   ]
  },
+ "리자몽 MUR": {
+  "buy": 2200000,
+  "grade": "M2 116/080 · PSA10",
+  "url": "https://snkrdunk.com/apparels/704407",
+  "series": [
+   [
+    "2026-10-14",
+    1
+   ]
+  ],
+  "psa10Pop": 4996,
+  "info": {
+   "acquired": "당근에서 구매"
+  }
+ },
  "블래키 ex SAR": {
   "buy": 870000,
   "grade": "217/187 · PSA10",
@@ -15534,23 +15549,8 @@
    ]
   ]
  },
- "리자몽 MUR": {
-  "buy": 2200000,
-  "grade": "M2 116/080 · PSA10",
-  "url": "https://snkrdunk.com/apparels/704407",
-  "series": [
-   [
-    "2026-10-14",
-    1
-   ]
-  ],
-  "psa10Pop": 4996,
-  "info": {
-   "acquired": "당근에서 구매"
-  }
- },
  "_meta": {
-  "updatedAt": "2026-10-14T09:57:36.742Z",
+  "updatedAt": "2026-10-14T09:57:42.282Z",
   "rate": 8.4835
  },
  "_watchlist": {
