@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>포켓몬 카드 포트폴리오</title>
+<title>TCG 카드 포트폴리오</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
@@ -133,6 +133,20 @@
   .stack-bottom.pos { color: var(--green); }
   .stack-bottom.neg { color: var(--red); }
   .stack-sub { font-size: 11.5px; font-weight: 600; margin-left: 4px; }
+  .game-tabs { display: flex; gap: 8px; margin: 4px 0 16px 0; flex-wrap: wrap; }
+  .game-tab {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .game-tab:hover { background: var(--bg-soft); }
+  .game-tab.active { background: #111827; color: #fff; border-color: #111827; }
+  .game-tab .tab-count { font-weight: 500; opacity: 0.7; margin-left: 4px; }
   .stack-yen { font-size: 11px; color: var(--gray); margin-top: 1px; }
   .last-trade-cell { font-size: 12.5px; color: var(--gray); }
   .last-trade-cell.stale { color: #b45309; }
@@ -564,14 +578,15 @@
 <body>
 <div class="header-row">
   <div>
-    <h1>🎴 포켓몬 카드 포트폴리오</h1>
-    <div class="subtitle">보유 카드 <span id="cardCount">-</span>종 · SNKRDUNK(스니커덩크) PSA10 최신 거래가 + 관부가세 10% 반영 · 최종 갱신: <span id="lastUpdated">-</span></div>
+    <h1>🎴 TCG 카드 포트폴리오</h1>
+    <div class="subtitle"><span id="gameLabel">보유</span> 카드 <span id="cardCount">-</span>종 · SNKRDUNK(스니커덩크) PSA10 최신 거래가 + 관부가세 10% 반영 · 최종 갱신: <span id="lastUpdated">-</span></div>
   </div>
   <div>
     <button class="btn-refresh" id="refreshBtn">🔄 지금 업데이트</button>
     <div class="refresh-status" id="refreshStatus"></div>
   </div>
 </div>
+<div class="game-tabs" id="gameTabs"></div>
 <div class="summary-grid">
   <div class="card">
     <div class="label">총 구매금액</div>
@@ -624,6 +639,13 @@
 <summary><h2 style="display:inline">➕ 카드 추가</h2></summary>
 <div class="add-section">
   <div class="add-grid">
+    <div>
+      <label>종류</label>
+      <select id="addGame">
+        <option value="pokemon">포켓몬</option>
+        <option value="onepiece">원피스</option>
+      </select>
+    </div>
     <div>
       <label>카드명</label>
       <input type="text" id="addName" placeholder="예: 오사카 만자이 피카츄">
@@ -708,6 +730,13 @@
     <div class="add-section">
       <div class="add-grid">
         <div>
+          <label>종류</label>
+          <select id="wlAddGame">
+            <option value="pokemon">포켓몬</option>
+            <option value="onepiece">원피스</option>
+          </select>
+        </div>
+        <div>
           <label>카드명</label>
           <input type="text" id="wlAddName" placeholder="예: 요코하마 삼총사">
         </div>
@@ -780,11 +809,31 @@
 </details>
 <script>
 let data = {};
-function cardNames(d) {
+// 카드 종류: card.game === "onepiece" 면 원피스, 그 외(필드 없음 포함)는 전부 포켓몬으로 취급.
+const GAMES = {
+  all: { label: "전체", icon: "🗂" },
+  pokemon: { label: "포켓몬", icon: "🎴" },
+  onepiece: { label: "원피스", icon: "🏴‍☠️" },
+};
+function cardGame(d) {
+  return d && d.game === "onepiece" ? "onepiece" : "pokemon";
+}
+let currentGame = "pokemon";
+try {
+  const saved = localStorage.getItem("tcg_game");
+  if (saved && GAMES[saved]) currentGame = saved;
+} catch (e) {}
+// 서버(data.json) 기준 전체 카드 이름 — GitHub에 저장/순서변경 할 때처럼 종류와 무관하게 전부 필요한 곳에서 사용
+function cardNamesAll(d) {
   return Object.keys(d).filter(k => k !== "_meta" && k !== "_watchlist");
 }
+// 화면에 보여줄 카드 이름 — 현재 선택된 탭(포켓몬/원피스/전체)에 해당하는 카드만
+function cardNames(d) {
+  return cardNamesAll(d).filter(k => currentGame === "all" || cardGame(d[k]) === currentGame);
+}
 function watchlistNames(d) {
-  return Object.keys(d._watchlist || {});
+  const wl = d._watchlist || {};
+  return Object.keys(wl).filter(k => currentGame === "all" || cardGame(wl[k]) === currentGame);
 }
 // 카드 하나의 "현재 시점 최신 평가금액"을 하나로 통일해서 계산한다.
 // series(일 단위)와 history(시각 단위)가 서로 다른 스크립트 실행에서 따로 기록되다 보니
@@ -896,6 +945,13 @@ function detailEditFormHtml(name) {
   const info = d.info || {};
   return `
     <div class="detail-edit-grid">
+      <div>
+        <label>종류</label>
+        <select id="editGame">
+          <option value="pokemon" ${cardGame(d) === "pokemon" ? "selected" : ""}>포켓몬</option>
+          <option value="onepiece" ${cardGame(d) === "onepiece" ? "selected" : ""}>원피스</option>
+        </select>
+      </div>
       <div>
         <label>세트/카드번호</label>
         <input type="text" id="editGrade" value="${(d.grade || "").replace(/"/g, "&quot;")}">
@@ -1180,7 +1236,7 @@ function renderPortfolioHistoryModal() {
     <div class="modal-backdrop" id="historyModalBackdrop">
       <div class="modal-panel">
         <div class="modal-head">
-          <b>포트폴리오 히스토리</b>
+          <b>포트폴리오 히스토리 · ${currentGame === "all" ? "전체" : GAMES[currentGame].label}</b>
           <div style="display:flex; align-items:center; gap:8px;">
             <button class="btn secondary" id="historyResetBtn" style="padding:5px 12px; font-size:12.5px;">🗑 히스토리 초기화</button>
             <button class="detail-close" id="historyModalClose">✕ 닫기</button>
@@ -1361,6 +1417,12 @@ function buildSelect() {
 let chart = null;
 function renderChart(name) {
   const d = data[name];
+  if (!d) {
+    if (chart) { chart.destroy(); chart = null; }
+    document.getElementById("chartStats").innerHTML = "이 종류에는 아직 카드가 없어요.";
+    document.getElementById("chartLink").href = "#";
+    return;
+  }
   const labels = d.series.map(p => p[0]);
   const values = d.series.map(p => p[1]);
   const buyLine = labels.map(() => d.buy);
@@ -1417,7 +1479,7 @@ function renderSummary() {
   let buy = 0, cur = 0;
   names.forEach(n => { buy += data[n].buy; cur += latestCardValue(n); });
   const diff = cur - buy;
-  const rate = diff / buy * 100;
+  const rate = buy ? diff / buy * 100 : 0;
   document.getElementById("sumBuy").textContent = won(buy);
   document.getElementById("sumCur").textContent = won(cur);
   const diffEl = document.getElementById("sumDiff");
@@ -1428,6 +1490,7 @@ function renderSummary() {
   rateEl.className = "value " + (rate >= 0 ? "pos" : "neg");
   document.getElementById("lastUpdated").textContent = formatUpdatedAt(data._meta && data._meta.updatedAt);
   document.getElementById("cardCount").textContent = names.length;
+  document.getElementById("gameLabel").textContent = currentGame === "all" ? "전체" : GAMES[currentGame].label;
 }
 // ---- GitHub 연결 설정 (localStorage에만 저장) ----
 const ghOwnerEl = document.getElementById("ghOwner");
@@ -1653,7 +1716,7 @@ async function addCandidateToGithub() {
     const getJson = await getRes.json();
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
     if (!currentData._watchlist) currentData._watchlist = {};
-    const entry = { grade, url, series: [] };
+    const entry = { grade, url, series: [], game: document.getElementById("wlAddGame").value };
     if (targetRaw) entry.targetPrice = parseInt(targetRaw, 10);
     if (popRaw) entry.psa10Pop = parseInt(popRaw, 10);
     if (memo) entry.memo = memo;
@@ -1673,11 +1736,17 @@ async function addCandidateToGithub() {
       throw new Error(`저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
     }
     data = currentData;
-    renderWatchlist();
+    const wlGame = entry.game;
+    if (currentGame !== "all" && currentGame !== wlGame) {
+      currentGame = wlGame;
+      try { localStorage.setItem("tcg_game", wlGame); } catch (e) {}
+    }
+    renderAll();
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 후보 카드가 추가됐습니다. 다음 자동 갱신 때 시세가 채워집니다.`;
     ["wlAddName", "wlAddGrade", "wlAddTarget", "wlAddPop", "wlAddMemo", "wlAddUrl", "wlAddEval"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("wlAddGradeSelect").value = "PSA10";
+    renderGameTabs();
   } catch (e) {
     statusEl.className = "add-status err";
     statusEl.textContent = e.message;
@@ -1794,6 +1863,7 @@ async function saveEvaluationToGithub(name, newText) {
 }
 async function saveCardEditToGithub(name) {
   const statusEl = document.getElementById("addStatus");
+  const game = document.getElementById("editGame").value;
   const grade = document.getElementById("editGrade").value.trim();
   const buy = parseInt(document.getElementById("editBuy").value, 10);
   const popRaw = document.getElementById("editPop").value.trim();
@@ -1830,6 +1900,7 @@ async function saveCardEditToGithub(name) {
     }
     const card = currentData[name];
     card.grade = grade;
+    card.game = game;
     card.buy = buy;
     card.url = url;
     if (popRaw) card.psa10Pop = parseInt(popRaw, 10);
@@ -1856,10 +1927,7 @@ async function saveCardEditToGithub(name) {
     }
     data = currentData;
     cardEditing = false;
-    renderSummary();
-    buildRows();
-    renderTable();
-    buildSelect();
+    renderAll(); // 종류(포켓몬/원피스)를 바꿨다면 탭 카운트와 목록에도 바로 반영
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 카드 정보가 수정됐습니다. 1~2분 뒤 사이트에도 반영됩니다.`;
   } catch (e) {
@@ -1878,6 +1946,7 @@ async function addCardToGithub() {
   const buy = parseInt(document.getElementById("addBuy").value, 10);
   const cur = parseInt(document.getElementById("addCur").value, 10);
   const url = document.getElementById("addUrl").value.trim();
+  const game = document.getElementById("addGame").value;
   const popRaw = document.getElementById("addPop").value.trim();
   const acquired = document.getElementById("addAcquired").value.trim();
   const features = document.getElementById("addFeatures").value.trim();
@@ -1914,7 +1983,7 @@ async function addCardToGithub() {
     const getJson = await getRes.json();
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
     const today = new Date().toISOString().slice(0, 10);
-    currentData[name] = { buy, grade, url, series: [[today, cur]] };
+    currentData[name] = { buy, grade, url, series: [[today, cur]], game };
     if (popRaw) currentData[name].psa10Pop = parseInt(popRaw, 10);
     const info = {};
     if (acquired) info.acquired = acquired;
@@ -1936,15 +2005,19 @@ async function addCardToGithub() {
       throw new Error(`저장 실패 (${putRes.status}): ${errJson.message || "알 수 없는 오류"}`);
     }
     data = currentData;
-    renderSummary();
-    buildRows();
-    renderTable();
-    buildSelect();
+    // 다른 종류 카드를 추가했으면 그 종류 탭으로 자동 전환해서 방금 추가한 카드가 바로 보이게 한다
+    if (currentGame !== "all" && currentGame !== game) {
+      currentGame = game;
+      try { localStorage.setItem("tcg_game", game); } catch (e) {}
+    }
+    renderAll();
+    document.getElementById("cardSelect").value = name;
     renderChart(name);
     statusEl.className = "add-status ok";
     statusEl.textContent = `"${name}" 카드가 추가됐습니다. 1~2분 뒤 사이트에도 반영됩니다.`;
     ["addName","addGrade","addBuy","addCur","addUrl","addPop","addAcquired","addFeatures","addComment","addForecast"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("addGradeSelect").value = "PSA10";
+    renderGameTabs();
   } catch (e) {
     statusEl.className = "add-status err";
     statusEl.textContent = e.message;
@@ -2038,7 +2111,7 @@ async function saveOrderToGithub(newNames) {
     const currentData = JSON.parse(b64ToUtf8(getJson.content));
     // 드래그 이후 순서를 기준으로 최신 data.json의 카드들을 재배열.
     // (드래그 중에 다른 곳에서 카드가 추가/삭제됐다면 그 카드는 맨 뒤에 붙임)
-    const known = new Set(cardNames(currentData));
+    const known = new Set(cardNamesAll(currentData));
     const finalOrder = newNames.filter(n => known.has(n));
     known.forEach(n => { if (!finalOrder.includes(n)) finalOrder.push(n); });
     const reordered = {};
@@ -2200,16 +2273,44 @@ refreshBtn.addEventListener("click", async () => {
   }
 });
 document.getElementById("portfolioHistoryBtn").addEventListener("click", openPortfolioHistoryModal);
-async function init() {
-  loadGhSettings();
-  const res = await fetch("./data.json", { cache: "no-store" });
-  data = await res.json();
+function renderGameTabs() {
+  const counts = { all: cardNamesAll(data).length, pokemon: 0, onepiece: 0 };
+  cardNamesAll(data).forEach(n => { counts[cardGame(data[n])]++; });
+  document.getElementById("gameTabs").innerHTML = ["pokemon", "onepiece", "all"].map(g => `
+    <button class="game-tab ${g === currentGame ? "active" : ""}" data-game="${g}">${GAMES[g].icon} ${GAMES[g].label}<span class="tab-count">${counts[g]}</span></button>
+  `).join("");
+  document.querySelectorAll("#gameTabs .game-tab").forEach(btn => {
+    btn.addEventListener("click", () => setGame(btn.dataset.game));
+  });
+  // 카드/후보 추가 폼의 기본 종류도 현재 탭에 맞춰준다(전체 탭이면 포켓몬)
+  const defaultGame = currentGame === "all" ? "pokemon" : currentGame;
+  ["addGame", "wlAddGame"].forEach(id => { const el = document.getElementById(id); if (el) el.value = defaultGame; });
+}
+function renderAll() {
+  renderGameTabs();
   renderSummary();
   buildRows();
   renderTable();
   buildSelect();
   renderChart(cardNames(data)[0]);
   renderWatchlist();
+  if (portfolioHistoryOpen) renderPortfolioHistoryModal();
+}
+function setGame(g) {
+  if (!GAMES[g] || g === currentGame) return;
+  currentGame = g;
+  try { localStorage.setItem("tcg_game", g); } catch (e) {}
+  expandedName = null;
+  expandedWlName = null;
+  cardEditing = false;
+  wlEvalEditing = false;
+  renderAll();
+}
+async function init() {
+  loadGhSettings();
+  const res = await fetch("./data.json", { cache: "no-store" });
+  data = await res.json();
+  renderAll();
 }
 init();
 </script>
