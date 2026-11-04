@@ -19154,5 +19154,17 @@
   ],
   "lastTradeDate": "2026-11-03T08:01:16.221Z",
   "game": "onepiece"
+ },
+ "핸콕 이벤트 무서워": {
+  "buy": 350000,
+  "grade": "OP14-118 · PSA10",
+  "url": "https://snkrdunk.com/apparels/728157",
+  "series": [
+   [
+    "2026-11-04",
+    1
+   ]
+  ],
+  "game": "onepiece"
  }
 }
