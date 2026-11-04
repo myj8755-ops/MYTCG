@@ -50,17 +50,51 @@ async function getExchangeRate() {
 //   "2026/07/20  PSA10   1장   ¥10,380"
 // 형식으로 나타난다 (한국어/일본어 로케일에 따라 "1장"/"1枚"가 섞여 나올 수 있음).
 // 날짜 부분(date text)과 가격(¥N)을 함께 뽑는다. 가장 위(topmost) = 가장 최근 거래.
-function extractLatestPsa10(pageText) {
-  const lines = pageText.split("\n");
-  for (const line of lines) {
-    const m = line.match(/^(.*?)\s*PSA10\s+1(?:枚|장)\s+¥\s*([\d,]+)/);
+function extractPsa10Trades(pageText) {
+  const trades = [];
+  for (const line of pageText.split("\n")) {
+    const m = line.match(/^(.*?)\s*PSA10\s+1(?:枚|장)\s+¥([\d,]+)/);
     if (m) {
-      const dateText = m[1].trim();
-      const jpy = parseInt(m[2].replace(/,/g, ""), 10);
-      return { jpy, dateText };
+      trades.push({ dateText: m[1].trim(), jpy: parseInt(m[2].replace(/,/g, ""), 10) });
     }
   }
+  return trades; // 위에서부터 = 최신 거래 순
+}
+// ---- 이상 거래가 필터 ----
+// 판매자가 0을 하나 빼먹어서 450,000엔짜리가 45,000엔에 거래되는 식의 "오타 거래"가 가끔 있다.
+// 이런 값이 최신 시세로 잡히면 포트폴리오 수익률이 갑자기 튀므로 걸러낸다.
+// 기준: 최근 거래들의 중앙값 대비 OUTLIER_LOW 배 미만 / OUTLIER_HIGH 배 초과면 이상치.
+const OUTLIER_LOW = 0.5;
+const OUTLIER_HIGH = 2.0;
+const OUTLIER_SAMPLE = 10; // 기준 계산에 쓰는 최근 거래 수
+function median(nums) {
+  const a = [...nums].sort((x, y) => x - y);
+  const mid = Math.floor(a.length / 2);
+  return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2;
+}
+function isOutlier(jpy, referencePrices) {
+  if (!referencePrices.length) return false;
+  const ref = median(referencePrices);
+  return jpy < ref * OUTLIER_LOW || jpy > ref * OUTLIER_HIGH;
+}
+// 최신 거래부터 훑으면서 이상치가 아닌 첫 거래를 반환. 전부 이상치면 null(이번 회차는 갱신 건너뜀).
+// 기준값은 "최근 거래 전체의 중앙값"(후보 자신 포함). 중앙값은 한두 개 오타 거래에 흔들리지 않는다.
+// 거래가 3건 미만이면 중앙값이 의미 없으므로 마지막 기록 엔화가(lastJpy)와 비교하고, 그것도 없으면 통과.
+function pickLatestValidTrade(trades, lastJpy, name) {
+  const recent = trades.slice(0, OUTLIER_SAMPLE);
+  const refs = recent.length >= 3 ? recent.map(x => x.jpy) : (lastJpy ? [lastJpy] : []);
+  for (const t of recent) {
+    if (isOutlier(t.jpy, refs)) {
+      console.warn(`[outlier] ${name}: ¥${t.jpy.toLocaleString()} (${t.dateText}) 이상 거래가로 판단해 제외 (기준 중앙값 ¥${Math.round(median(refs)).toLocaleString()})`);
+      continue;
+    }
+    return t;
+  }
   return null;
+}
+function lastRecordedJpy(card) {
+  const h = Array.isArray(card.history) ? card.history : [];
+  return h.length && typeof h[h.length - 1][2] === "number" ? h[h.length - 1][2] : null;
 }
 // "18시간 전" / "45분 전" / "1일 전" / "2026/07/20" 형식의 텍스트를 실제 시각으로 변환.
 // 시간/분/일 단위 상대 표현은 정확한 시각(ISO datetime)으로, 절대 날짜("YYYY/MM/DD")는
@@ -115,7 +149,7 @@ async function main() {
       await page.goto(card.url, { waitUntil: "domcontentloaded", timeout: 20000 });
       await page.waitForTimeout(2500);
       const text = await page.evaluate(() => document.body.innerText);
-      const found = extractLatestPsa10(text);
+      const found = pickLatestValidTrade(extractPsa10Trades(text), lastRecordedJpy(card), name);
       if (found === null) {
         console.warn(`[warn] ${name}: PSA10 1장 거래를 찾지 못함`);
         continue;
@@ -152,7 +186,7 @@ async function main() {
       await page.goto(card.url, { waitUntil: "domcontentloaded", timeout: 20000 });
       await page.waitForTimeout(2500);
       const text = await page.evaluate(() => document.body.innerText);
-      const found = extractLatestPsa10(text);
+      const found = pickLatestValidTrade(extractPsa10Trades(text), lastRecordedJpy(card), name);
       if (found === null) {
         console.warn(`[warn-watchlist] ${name}: PSA10 1장 거래를 찾지 못함`);
         continue;
