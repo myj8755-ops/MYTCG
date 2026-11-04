@@ -612,10 +612,10 @@
   <b>계산 방식</b>: 스니커덩크 엔화 거래가 × 환율(자동 조회) × 1.10(한국 반입 시 관부가세 10%) = 실제 한국에서 이 카드를 사려면 드는 비용 기준. 등급은 전 카드 PSA10 기준입니다. <b>PSA10 Pop</b>은 PSA 공식 population report 기준 해당 카드의 PSA10 등급 전 세계 발급 수량입니다(2026-07-24 기준, 이후 계속 증가할 수 있음). <b>최근 거래일</b>은 SNKRDUNK 매매이력에서 확인된 가장 최근 PSA10 1장 거래가 이뤄진 날짜입니다(7일 이상 지났으면 주황색으로 표시). 표에서 카드 행을 클릭하면 바로 아래에 획득 경로·특징·평가·5년 후 가치 예상이 펼쳐집니다(평가/전망은 개인 추정치이며 투자 조언이 아닙니다). 카드별 시세 추이 아래에서 카드를 골라 개별 손익도 확인할 수 있습니다.
 </div>
 <div class="table-toolbar">
-  <span class="grade-tag" id="sortHint">표 제목을 누르면 정렬돼요.</span>
+  <span class="grade-tag" id="sortHint">기본: 수익률 높은 순 · 표 제목을 누르면 다른 기준으로 정렬돼요.</span>
   <div style="display:flex; gap:8px; flex-wrap:wrap;">
     <button class="btn secondary" id="reorderToggleBtn">✎ 순서 편집</button>
-    <button class="btn secondary" id="resetSortBtn" style="display:none">정렬 해제 (기본 순서로)</button>
+    <button class="btn secondary" id="resetSortBtn" style="display:none">수익률 높은 순으로 되돌리기</button>
   </div>
 </div>
 <div class="table-scroll">
@@ -936,7 +936,7 @@ function buildRows() {
     return { name, grade: d.grade, buy: d.buy, cur, diff, rate, pop, lastTrade, jpy };
   });
 }
-let sortKey = null, sortAsc = true;
+let sortKey = "rate", sortAsc = false; // 기본: 수익률 높은 순 (상시)
 let reorderMode = false;
 let expandedName = null;
 let cardEditing = false;
@@ -1270,7 +1270,7 @@ function renderPortfolioHistoryModal() {
 function renderTable() {
   const tbody = document.querySelector("#cardTable tbody");
   let list = [...rows];
-  if (sortKey) {
+  if (sortKey && !reorderMode) { // 순서 편집 중에는 저장된 수동 순서를 보여준다
     list.sort((a, b) => {
       let av = a[sortKey], bv = b[sortKey];
       if (typeof av === "string") return sortAsc ? av.localeCompare(bv, "ko") : bv.localeCompare(av, "ko");
@@ -1381,7 +1381,7 @@ reorderToggleBtn.addEventListener("click", () => {
   reorderToggleBtn.textContent = reorderMode ? "✓ 순서 편집 완료" : "✎ 순서 편집";
   document.querySelector("th.order-col").style.display = reorderMode ? "table-cell" : "none";
   if (reorderMode) {
-    if (sortKey !== null) { resetSortBtn.click(); } else { renderTable(); }
+    renderTable();
     enableRowDrag();
   } else {
     disableRowDrag();
@@ -1390,7 +1390,7 @@ reorderToggleBtn.addEventListener("click", () => {
 });
 const resetSortBtn = document.getElementById("resetSortBtn");
 resetSortBtn.addEventListener("click", () => {
-  sortKey = null;
+  sortKey = "rate"; sortAsc = false;
   document.querySelectorAll(".sort-arrow").forEach(a => a.textContent = "");
   resetSortBtn.style.display = "none";
   renderTable();
